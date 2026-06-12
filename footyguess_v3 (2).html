@@ -1,0 +1,2185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FootyGuess — Daily Football Puzzle</title>
+<meta name="description" content="Guess the mystery footballer in 8 tries. A new puzzle every day.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { overflow-x: hidden; }
+  body { overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+
+  :root {
+    --bg:        #0a0e1a;
+    --bg2:       #111827;
+    --bg3:       #1a2235;
+    --surface:   #1e2d45;
+    --border:    rgba(255,255,255,0.08);
+    --border2:   rgba(255,255,255,0.14);
+    --green:     #22c55e;
+    --green-dim: rgba(34,197,94,0.15);
+    --amber:     #f59e0b;
+    --amber-dim: rgba(245,158,11,0.15);
+    --text:      #f1f5f9;
+    --text2:     #94a3b8;
+    --text3:     #475569;
+    --font:      'Inter', sans-serif;
+  }
+
+  html { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100%;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 80px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ─────────────────────────────────────────────────── */
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px 8px;
+    border-bottom: 0.5px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 50;
+    gap: 6px;
+  }
+  .logo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    cursor: pointer;
+    user-select: none;
+    text-decoration: none;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: var(--font);
+  }
+  .logo:hover .logo-name { opacity: 0.82; }
+  .logo-name {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    line-height: 1;
+    transition: opacity .15s;
+  }
+  .logo-name span { color: var(--green); }
+  .logo-tag {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text3);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    line-height: 1;
+    padding-left: 2px;
+    transition: color .3s;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+  }
+  .header-countdown {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: var(--bg3);
+    border: 0.5px solid var(--border2);
+    border-radius: 20px;
+    padding: 3px 8px;
+    cursor: default;
+    flex-shrink: 0;
+  }
+  .hcd-icon { font-size: 10px; opacity: 0.45; }
+  .hcd-time {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text2);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    min-width: 50px;
+    letter-spacing: 0.1px;
+    transition: color .3s;
+  }
+  .hcd-time.urgent { color: var(--amber); }
+  body.wc-mode .header-countdown { border-color: var(--wc-border2); background: var(--wc-bg3); }
+  body.wc-mode .hcd-time.urgent { color: var(--wc-gold); }
+  .streak-pill {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--bg3);
+    border: 0.5px solid var(--border2);
+    border-radius: 20px;
+    padding: 3px 9px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--amber);
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .streak-pill:hover { background: var(--surface); border-color: rgba(245,158,11,0.3); }
+  .streak-pill.bump { animation: streakBump .45s cubic-bezier(.36,.07,.19,.97); }
+  @keyframes streakBump {
+    0%   { transform: scale(1); }
+    30%  { transform: scale(1.18); }
+    60%  { transform: scale(0.95); }
+    100% { transform: scale(1); }
+  }
+
+  /* ── STATS SHEET ─────────────────────────────────────────── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--bg3);
+    border-radius: 10px;
+    padding: 12px 6px;
+    text-align: center;
+    border: 0.5px solid var(--border);
+  }
+  .stat-val {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+    letter-spacing: -0.5px;
+  }
+  .stat-val.amber { color: var(--amber); }
+  .stat-val.green { color: var(--green); }
+  .stat-lbl {
+    font-size: 9px;
+    color: var(--text3);
+    margin-top: 5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    line-height: 1.3;
+  }
+
+  /* streak calendar strip */
+  .streak-section { margin-bottom: 20px; }
+  .streak-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+  .streak-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 48px;
+    padding: 0 2px;
+  }
+  .streak-day {
+    flex: 1;
+    border-radius: 3px;
+    min-height: 6px;
+    transition: height .3s ease;
+  }
+  .streak-day.played-won  { background: var(--green); }
+  .streak-day.played-lost { background: #2d3748; }
+  .streak-day.today       { background: var(--amber); }
+  .streak-day.future      { background: var(--border); min-height: 6px; height: 6px !important; }
+  .streak-day.empty       { background: var(--border); opacity: 0.4; min-height: 6px; height: 6px !important; }
+
+  /* guess distribution */
+  .dist-section { margin-bottom: 20px; }
+  .dist-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    font-size: 12px;
+  }
+  .dist-num { width: 12px; color: var(--text3); font-weight: 700; text-align: right; flex-shrink: 0; }
+  .dist-bar-wrap { flex: 1; background: var(--bg3); border-radius: 3px; height: 20px; overflow: hidden; }
+  .dist-bar {
+    height: 100%;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #052e16;
+    min-width: 20px;
+    transition: width .5s ease;
+  }
+  .dist-bar.highlight { background: var(--green); }
+  .dist-bar.normal    { background: #2d3748; color: var(--text2); }
+
+  /* milestone toast — bigger and centered */
+  .milestone-toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background: var(--bg2);
+    border: 1px solid rgba(245,158,11,0.4);
+    border-radius: 16px;
+    padding: 24px 28px;
+    text-align: center;
+    z-index: 300;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .25s, transform .3s cubic-bezier(.34,1.56,.64,1);
+    max-width: 280px;
+    width: 90%;
+  }
+  .milestone-toast.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  .milestone-icon { font-size: 40px; margin-bottom: 8px; }
+  .milestone-title { font-size: 18px; font-weight: 800; color: var(--amber); margin-bottom: 4px; }
+  .milestone-sub { font-size: 13px; color: var(--text2); }
+  .guess-counter {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+    min-width: 38px;
+    text-align: right;
+  }
+  .guess-counter span { color: var(--text); }
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text3);
+    font-size: 18px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: color .15s, background .15s;
+    font-family: var(--font);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { color: var(--text2); background: var(--bg3); }
+
+  /* ── PUZZLE BAR ─────────────────────────────────────────────── */
+  .puzzle-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 16px;
+    background: var(--bg2);
+    border-bottom: 0.5px solid var(--border);
+  }
+  .puzzle-num {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text2);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* ── COLUMN HEADERS ─────────────────────────────────────────── */
+  .col-headers {
+    display: grid;
+    grid-template-columns: 1fr repeat(7, var(--tile-size));
+    gap: 3px;
+    padding: 8px 12px 4px;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: sticky;
+    top: 57px;
+    background: var(--bg);
+    z-index: 40;
+  }
+  .col-headers > div { text-align: center; }
+  .col-headers > div:first-child { text-align: left; padding-left: 10px; }
+
+  /* ── GUESS ROWS ─────────────────────────────────────────────── */
+  .guesses-area {
+    flex: 1;
+    padding: 4px 12px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .empty-label {
+    font-size: 12px;
+    color: var(--text3);
+    text-align: center;
+    padding: 16px 0 4px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+  }
+
+  .guess-row {
+    display: grid;
+    grid-template-columns: 1fr repeat(7, var(--tile-size));
+    gap: 3px;
+    min-height: var(--tile-size);
+  }
+
+  .player-name-cell {
+    display: flex;
+    align-items: center;
+    padding: 0 7px;
+    background: var(--bg3);
+    border-radius: 5px;
+    border: 0.5px solid var(--border);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  /* tile flip */
+  .clue-tile {
+    width: var(--tile-size);
+    height: var(--tile-size);
+    border-radius: 5px;
+    perspective: 400px;
+    flex-shrink: 0;
+  }
+  .tile-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.45s ease;
+    border-radius: 6px;
+  }
+  .tile-front, .tile-back {
+    position: absolute;
+    inset: 0;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    padding: 2px;
+  }
+  .tile-front {
+    background: var(--bg3);
+    border: 0.5px solid var(--border);
+  }
+  .tile-back { transform: rotateY(180deg); }
+  .tile-inner.flipped { transform: rotateY(180deg); }
+
+  .tile-back.correct { background: var(--green); color: #052e16; }
+  .tile-back.higher,
+  .tile-back.lower   { background: var(--amber); color: #431407; }
+  .tile-back.wrong   { background: #2d3748; color: var(--text2); border: 0.5px solid var(--border2); }
+
+  .tile-val   { font-size: 9px; font-weight: 800; line-height: 1.1; text-align: center; }
+  .tile-arrow { font-size: 13px; margin-top: 1px; line-height: 1; }
+
+  /* empty rows */
+  .guess-row.empty .player-name-cell {
+    background: transparent;
+    border: 0.5px dashed var(--border);
+    color: var(--text3);
+    font-size: 12px;
+    font-weight: 400;
+  }
+  .empty-tile {
+    width: var(--tile-size);
+    height: var(--tile-size);
+    border-radius: 5px;
+    border: 0.5px dashed var(--border);
+  }
+
+  /* ── SEARCH BAR ─────────────────────────────────────────────── */
+  .search-wrap {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    padding: 8px 12px 12px;
+    background: var(--bg);
+    border-top: 0.5px solid var(--border);
+    z-index: 60;
+  }
+  .search-inner { position: relative; }
+
+  .autocomplete {
+    position: absolute;
+    bottom: 54px;
+    left: 0; right: 0;
+    background: var(--bg2);
+    border: 0.5px solid var(--border2);
+    border-radius: 10px;
+    overflow: hidden;
+    z-index: 100;
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.5);
+    max-height: 240px;
+    overflow-y: auto;
+    display: none;
+  }
+  .ac-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 0.5px solid var(--border);
+    transition: background .1s;
+  }
+  .ac-item:last-child { border-bottom: none; }
+  .ac-item:hover, .ac-item.highlighted { background: var(--bg3); }
+  .ac-emoji { font-size: 18px; width: 28px; text-align: center; flex-shrink: 0; }
+  .ac-name  { font-size: 14px; font-weight: 600; color: var(--text); }
+  .ac-sub   { font-size: 12px; color: var(--text3); margin-top: 1px; }
+  .ac-fame  {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .ac-fame.STAR { background: var(--amber-dim); color: var(--amber); }
+  .ac-fame.PRO  { background: var(--green-dim); color: var(--green); }
+  .ac-fame.SEMI { background: rgba(255,255,255,0.06); color: var(--text3); }
+
+  .search-input {
+    width: 100%;
+    height: 48px;
+    background: var(--bg3);
+    border: 1.5px solid var(--border2);
+    border-radius: 10px;
+    padding: 0 52px 0 16px;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    outline: none;
+    transition: border-color .15s;
+    caret-color: var(--green);
+  }
+  .search-input::placeholder { color: var(--text3); font-weight: 400; }
+  .search-input:focus { border-color: rgba(34,197,94,0.5); background: var(--bg2); }
+  .search-input:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .submit-btn {
+    position: absolute;
+    right: 6px; top: 6px;
+    width: 36px; height: 36px;
+    background: var(--green);
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #052e16;
+    font-weight: 900;
+    font-family: var(--font);
+    transition: opacity .15s, transform .1s;
+  }
+  .submit-btn:hover:not(:disabled) { opacity: 0.88; }
+  .submit-btn:active:not(:disabled) { transform: scale(0.95); }
+  .submit-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+  /* ── TOAST ──────────────────────────────────────────────────── */
+  #toast {
+    position: fixed;
+    top: 72px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-6px);
+    background: var(--text);
+    color: var(--bg);
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: var(--font);
+    opacity: 0;
+    transition: opacity .2s, transform .2s;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 200;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── BOTTOM SHEET (shared by result + how-to) ───────────────── */
+  .sheet-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,14,26,0.88);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 150;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .sheet-overlay.open { display: flex; }
+  .sheet {
+    width: 100%;
+    max-width: 480px;
+    background: var(--bg2);
+    border-top: 0.5px solid var(--border2);
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px 40px;
+    animation: slideUp .32s cubic-bezier(.22,.68,0,1.2);
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(60px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  /* ── RESULT SHEET ───────────────────────────────────────────── */
+  .result-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+  }
+  .result-badge.win  { background: var(--green-dim); color: var(--green); border: 0.5px solid rgba(34,197,94,0.3); }
+  .result-badge.lose { background: rgba(239,68,68,0.12); color: #f87171; border: 0.5px solid rgba(239,68,68,0.25); }
+
+  .result-player {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    background: var(--bg3);
+    border-radius: 12px;
+    border: 0.5px solid var(--border2);
+    margin-bottom: 14px;
+  }
+  .result-flag { font-size: 32px; line-height: 1; }
+  .result-name { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
+  .result-detail { font-size: 13px; color: var(--text2); margin-top: 3px; }
+
+  .result-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .r-stat { background: var(--bg3); border-radius: 8px; padding: 10px 8px; text-align: center; border: 0.5px solid var(--border); }
+  .r-val  { font-size: 22px; font-weight: 800; color: var(--text); line-height: 1.1; }
+  .r-lbl  { font-size: 10px; color: var(--text3); margin-top: 3px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+
+  .share-preview {
+    background: #0d1117;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: monospace;
+    font-size: 13px;
+    color: #e2e8f0;
+    line-height: 1.9;
+    margin-bottom: 14px;
+    border: 0.5px solid rgba(255,255,255,0.07);
+    white-space: pre;
+  }
+
+  .btn-primary {
+    width: 100%;
+    height: 50px;
+    background: var(--green);
+    color: #052e16;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: opacity .15s;
+    margin-bottom: 10px;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+
+  .btn-secondary {
+    width: 100%;
+    height: 44px;
+    background: transparent;
+    color: var(--text2);
+    border: 0.5px solid var(--border2);
+    border-radius: 10px;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    margin-bottom: 10px;
+  }
+  .btn-secondary:hover { background: var(--bg3); color: var(--text); }
+
+  .countdown-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text3);
+    margin-top: 4px;
+  }
+  .countdown-time {
+    color: var(--text2);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /* ── HOW TO PLAY SHEET ──────────────────────────────────────── */
+  .how-title { font-size: 18px; font-weight: 800; margin-bottom: 14px; letter-spacing: -0.3px; }
+  .how-intro { font-size: 14px; color: var(--text2); line-height: 1.7; margin-bottom: 16px; }
+
+  .how-divider { height: 0.5px; background: var(--border); margin: 16px 0; }
+
+  .how-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 14px;
+    align-items: flex-start;
+  }
+  .how-tile {
+    width: 38px;
+    height: 38px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .how-tile.g { background: var(--green); color: #052e16; }
+  .how-tile.a { background: var(--amber); color: #431407; }
+  .how-tile.d { background: #2d3748; color: var(--text2); }
+  .how-text { font-size: 13px; color: var(--text2); line-height: 1.65; }
+  .how-text strong { color: var(--text); font-weight: 600; }
+
+  .attr-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .attr-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--bg3);
+    border-radius: 8px;
+    border: 0.5px solid var(--border);
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 500;
+  }
+  .attr-item span:first-child { font-size: 16px; }
+
+  /* ── CONFETTI ────────────────────────────────────────────────── */
+  #confetti-canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 140;
+  }
+
+  /* ── RESPONSIVE ─────────────────────────────────────────────── */
+  /* fluid tile size: fills screen with 12px side padding */
+  :root { --tile-size: min(44px, calc((100vw - 24px - 8 * 3px) / 9)); }
+
+  @media (max-width: 400px) {
+    .logo-name { font-size: 16px; }
+    .logo-tag  { font-size: 8px; }
+    .hcd-time  { min-width: 44px; font-size: 10px; }
+    .mode-btn  { padding: 3px 6px; font-size: 10px; }
+    .puzzle-bar { padding: 7px 12px; }
+  }
+
+  @media (max-width: 340px) {
+    .header-countdown { display: none; }  /* hide timer if screen really tiny */
+    .mode-btn { padding: 3px 5px; font-size: 10px; }
+  }
+
+  /* ── WORLD CUP MODE THEME ──────────────────────────────────── */
+  :root {
+    --wc-gold:      #f5c518;
+    --wc-gold2:     #e6a800;
+    --wc-gold-dim:  rgba(245,197,24,0.15);
+    --wc-gold-dim2: rgba(245,197,24,0.08);
+    --wc-bg:        #12100a;
+    --wc-bg2:       #1a1608;
+    --wc-bg3:       #221d0f;
+    --wc-surface:   #2a2410;
+    --wc-border:    rgba(245,197,24,0.12);
+    --wc-border2:   rgba(245,197,24,0.22);
+    --wc-red:       #e84142;
+    --wc-correct:   #c9a227;
+  }
+
+  body.wc-mode {
+    background: var(--wc-bg);
+    color: var(--text);
+  }
+  body.wc-mode #app { background: var(--wc-bg); }
+
+  /* WC header */
+  body.wc-mode header {
+    background: var(--wc-bg);
+    border-bottom-color: var(--wc-border);
+    background-image: linear-gradient(180deg, rgba(245,197,24,0.04) 0%, transparent 100%);
+  }
+  body.wc-mode .logo-name span { color: var(--wc-gold); }
+  body.wc-mode .logo-tag { color: rgba(245,197,24,0.5); }
+
+  body.wc-mode .puzzle-bar {
+    background: var(--wc-bg2);
+    border-bottom-color: var(--wc-border);
+  }
+  body.wc-mode .col-headers {
+    background: var(--wc-bg);
+    color: rgba(245,197,24,0.4);
+  }
+
+  /* WC tiles */
+  body.wc-mode .tile-front { background: var(--wc-bg3); border-color: var(--wc-border); }
+  body.wc-mode .tile-back.wrong   { background: #2a2410; color: #8a7a4a; border-color: var(--wc-border); }
+
+  /* WC guess rows */
+  body.wc-mode .player-name-cell {
+    background: var(--wc-bg3);
+    border-color: var(--wc-border);
+  }
+  body.wc-mode .guess-row.empty .player-name-cell,
+  body.wc-mode .empty-tile {
+    border-color: rgba(245,197,24,0.12);
+  }
+
+  /* WC search */
+  body.wc-mode .search-wrap { background: var(--wc-bg); border-top-color: var(--wc-border); }
+  body.wc-mode .search-input {
+    background: var(--wc-bg3);
+    border-color: var(--wc-border2);
+    color: var(--text);
+    caret-color: var(--wc-gold);
+  }
+  body.wc-mode .search-input:focus {
+    border-color: rgba(245,197,24,0.5);
+    background: var(--wc-bg2);
+  }
+  body.wc-mode .submit-btn { background: var(--wc-gold); color: #12100a; }
+  body.wc-mode .autocomplete { background: var(--wc-bg2); border-color: var(--wc-border2); }
+  body.wc-mode .ac-item { border-bottom-color: var(--wc-border); }
+  body.wc-mode .ac-item:hover,
+  body.wc-mode .ac-item.highlighted { background: var(--wc-bg3); }
+  body.wc-mode .ac-fame.STAR { background: rgba(245,197,24,0.15); color: var(--wc-gold); }
+  body.wc-mode .ac-fame.PRO  { background: rgba(245,197,24,0.08); color: #8a7a4a; }
+
+  /* WC streak pill */
+  body.wc-mode .streak-pill {
+    background: var(--wc-bg3);
+    border-color: var(--wc-border2);
+    color: var(--wc-gold);
+  }
+  body.wc-mode .streak-pill:hover { background: var(--wc-surface); }
+
+  /* WC sheets */
+  body.wc-mode .sheet-overlay { background: rgba(18,16,10,0.92); }
+  body.wc-mode .sheet { background: var(--wc-bg2); border-top-color: var(--wc-border2); }
+  body.wc-mode .btn-primary { background: var(--wc-gold); color: #12100a; }
+  body.wc-mode .btn-secondary {
+    border-color: var(--wc-border2);
+    color: var(--text2);
+  }
+  body.wc-mode .btn-secondary:hover { background: var(--wc-bg3); }
+
+  /* WC result tiles */
+  body.wc-mode .result-badge.win  { background: rgba(245,197,24,0.12); color: var(--wc-gold); border-color: rgba(245,197,24,0.3); }
+  body.wc-mode .result-badge.lose { background: rgba(232,65,66,0.12);  color: #f87171;        border-color: rgba(232,65,66,0.25); }
+  body.wc-mode .result-player { background: var(--wc-bg3); border-color: var(--wc-border2); }
+  body.wc-mode .r-stat { background: var(--wc-bg3); border-color: var(--wc-border); }
+
+  /* WC how-to tiles */
+  body.wc-mode .how-tile.g { background: var(--wc-gold); color: #12100a; }
+  body.wc-mode .how-tile.a { background: var(--amber); color: #431407; }
+  body.wc-mode .how-tile.d { background: #2a2410; color: #8a7a4a; }
+  body.wc-mode .attr-item  { background: var(--wc-bg3); border-color: var(--wc-border); }
+
+  /* WC stats */
+  body.wc-mode .stats-grid .stat-card { background: var(--wc-bg3); border-color: var(--wc-border); }
+  body.wc-mode .stat-val.green { color: var(--wc-gold); }
+  body.wc-mode .streak-day.played-won { background: var(--wc-gold); }
+  body.wc-mode .streak-day.today { background: var(--wc-red); }
+  body.wc-mode .dist-bar.highlight { background: var(--wc-gold); color: #12100a; }
+  body.wc-mode .milestone-toast { border-color: rgba(245,197,24,0.4); background: var(--wc-bg2); }
+  body.wc-mode .milestone-title { color: var(--wc-gold); }
+  body.wc-mode .share-preview { background: #0d0c06; border-color: var(--wc-border); }
+
+  /* ── MODE SWITCHER ─────────────────────────────────────────── */
+  .mode-switcher {
+    display: flex;
+    gap: 0;
+    background: var(--bg3);
+    border-radius: 8px;
+    padding: 3px;
+    border: 0.5px solid var(--border2);
+    transition: background .3s, border-color .3s;
+  }
+  body.wc-mode .mode-switcher { background: var(--wc-bg3); border-color: var(--wc-border2); }
+
+  .mode-btn {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--text3);
+    font-family: var(--font);
+    transition: all .2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .mode-btn.active {
+    background: var(--bg2);
+    color: var(--green);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  body.wc-mode .mode-btn.active {
+    background: var(--wc-bg2);
+    color: var(--wc-gold);
+  }
+
+  /* ── WC HEADER GLOW ────────────────────────────────────────── */
+  .wc-trophy-banner {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, rgba(245,197,24,0.12) 0%, rgba(230,168,0,0.06) 100%);
+    border-bottom: 0.5px solid rgba(245,197,24,0.2);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--wc-gold);
+    letter-spacing: 0.3px;
+    animation: shimmer 3s ease-in-out infinite;
+  }
+  body.wc-mode .wc-trophy-banner { display: flex; }
+
+  @keyframes shimmer {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.75; }
+  }
+
+  /* WC tile correct shimmer */
+
+
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<div id="app">
+  <header>
+    <button class="logo" onclick="openHow()" aria-label="FootyGuess">
+      <div class="logo-name">⚽ Footy<span>Guess</span></div>
+      <div class="logo-tag" id="logo-tag">Daily puzzle</div>
+    </button>
+    <div class="header-right">
+      <div class="mode-switcher">
+        <button class="mode-btn active" id="btn-standard" onclick="setMode('standard')">⚽ Daily</button>
+        <button class="mode-btn"        id="btn-wc"       onclick="setMode('wc')">🏆 World Cup</button>
+      </div>
+      <div class="header-countdown" id="header-countdown" title="Time until next puzzle">
+        <span class="hcd-icon">⏱</span>
+        <span class="hcd-time" id="hcd-time">--:--:--</span>
+      </div>
+      <div class="streak-pill" id="streak-pill" onclick="openStats()" title="View your stats">🔥 <span id="streak-val">0</span></div>
+      <button class="icon-btn" onclick="openAbout()" aria-label="About FootyGuess" title="About">?</button>
+    </div>
+  </header>
+
+  <div class="wc-trophy-banner" id="wc-banner">
+    🏆 FIFA World Cup 2026 — Guess the mystery international star
+  </div>
+
+  <div class="puzzle-bar">
+    <span class="puzzle-num" id="puzzle-num"></span>
+
+  </div>
+
+  <div class="col-headers">
+    <div>Player</div>
+    <div title="Nationality">🌍</div>
+    <div title="Club">🏟</div>
+    <div title="Position">📋</div>
+    <div title="Age">🎂</div>
+    <div title="Height">📏</div>
+    <div title="League">🏆</div>
+    <div title="Fame">⭐</div>
+  </div>
+
+  <div class="guesses-area" id="guesses-area"></div>
+</div>
+
+<div class="search-wrap">
+  <div class="search-inner">
+    <div class="autocomplete" id="autocomplete"></div>
+    <input type="text" class="search-input" id="search-input"
+      placeholder="Type a player name…"
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <button class="submit-btn" id="submit-btn" onclick="submitGuess()" disabled>→</button>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<div class="sheet-overlay" id="result-overlay" onclick="handleOverlayClick(event,'result-overlay')">
+  <div class="sheet" id="result-sheet"></div>
+</div>
+
+<div class="sheet-overlay" id="how-overlay" onclick="handleOverlayClick(event,'how-overlay')">
+  <div class="sheet">
+    <div style="text-align:center;padding:4px 0 18px">
+      <div style="font-size:30px;margin-bottom:8px">⚽</div>
+      <div style="font-size:22px;font-weight:900;letter-spacing:-0.5px;color:var(--text)">Footy<span style="color:var(--green)">Guess</span></div>
+      <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.2px;text-transform:uppercase;margin-top:4px">Daily football puzzle</div>
+    </div>
+    <div class="how-divider"></div>
+    <p class="how-intro" style="margin-top:14px">Guess the mystery footballer in <strong style="color:var(--text)">8 tries</strong>. After each guess, 7 colour-coded tiles reveal how close you are.</p>
+    <div class="attr-grid">
+      <div class="attr-item"><span>🌍</span> Nationality</div>
+      <div class="attr-item"><span>🏟</span> Club</div>
+      <div class="attr-item"><span>📋</span> Position</div>
+      <div class="attr-item"><span>🎂</span> Age</div>
+      <div class="attr-item"><span>📏</span> Height</div>
+      <div class="attr-item"><span>🏆</span> League</div>
+      <div class="attr-item"><span>⭐</span> Fame</div>
+    </div>
+    <div class="how-divider"></div>
+    <div class="how-row"><div class="how-tile g">EN</div><p class="how-text"><strong>Green</strong> — exact match on this attribute.</p></div>
+    <div class="how-row"><div class="how-tile a" style="font-size:18px">↑</div><p class="how-text"><strong>Amber + arrow</strong> — wrong, but shows direction for age &amp; height.</p></div>
+    <div class="how-row"><div class="how-tile d">MID</div><p class="how-text"><strong>Grey</strong> — no match. Keep narrowing.</p></div>
+    <div class="how-divider"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:10px;padding:12px">
+        <div style="font-size:15px;margin-bottom:5px">⚽</div>
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Daily mode</div>
+        <div style="font-size:11px;color:var(--text3);line-height:1.5">Top players from the world's biggest leagues</div>
+      </div>
+      <div style="background:var(--wc-bg3,#221d0f);border:0.5px solid rgba(245,197,24,0.2);border-radius:10px;padding:12px">
+        <div style="font-size:15px;margin-bottom:5px">🏆</div>
+        <div style="font-size:12px;font-weight:700;color:#f5c518;margin-bottom:3px">World Cup 2026</div>
+        <div style="font-size:11px;color:var(--text3);line-height:1.5">Stars from all 48 qualified nations</div>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--text3);line-height:1.7;padding:10px 12px;background:var(--bg3);border-radius:8px;border:0.5px solid var(--border);margin-bottom:20px">🔥 Play every day to build your streak. New puzzle at midnight UTC.</p>
+    <button class="btn-primary" onclick="closeHow()">Let's play ⚽</button>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="about-overlay" onclick="handleOverlayClick(event,'about-overlay')">
+  <div class="sheet" style="padding-bottom:40px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-size:17px;font-weight:800;letter-spacing:-0.3px">About FootyGuess</div>
+      <button class="icon-btn" onclick="closeAbout()">&#x2715;</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg3);border-radius:10px;border:0.5px solid var(--border)">
+        <span style="font-size:20px;flex-shrink:0">⚽</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">What is FootyGuess?</div>
+          <div style="font-size:12px;color:var(--text3);line-height:1.65">A free daily football guessing game. One mystery player per day — use the clues to figure out who it is in 8 guesses or fewer.</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg3);border-radius:10px;border:0.5px solid var(--border)">
+        <span style="font-size:20px;flex-shrink:0">🏆</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Two daily puzzles</div>
+          <div style="font-size:12px;color:var(--text3);line-height:1.65"><strong style="color:var(--text2)">Daily mode</strong> — top players from PL, La Liga, Serie A, Bundesliga, Ligue 1 &amp; more.<br><strong style="color:#f5c518">World Cup 2026</strong> — international stars from all 48 qualified nations.</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg3);border-radius:10px;border:0.5px solid var(--border)">
+        <span style="font-size:20px;flex-shrink:0">👥</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Player pool</div>
+          <div style="font-size:12px;color:var(--text3);line-height:1.65">Only well-known players. No obscure squad fillers. Legends like Zidane, Henry &amp; Maldini make occasional appearances.</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg3);border-radius:10px;border:0.5px solid var(--border)">
+        <span style="font-size:20px;flex-shrink:0">📅</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Data accuracy</div>
+          <div style="font-size:12px;color:var(--text3);line-height:1.65">Player data reflects the 2025/26 season (accurate as of August 2025). Very recent transfers may not be shown. Positions simplified to GK, DEF, MID, or FWD.</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg3);border-radius:10px;border:0.5px solid var(--border)">
+        <span style="font-size:20px;flex-shrink:0">🌍</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Nationality</div>
+          <div style="font-size:12px;color:var(--text3);line-height:1.65">Nationality shows the country a player <em>represents internationally</em> — not necessarily where they were born.</div>
+        </div>
+      </div>
+    </div>
+    <button class="btn-secondary" onclick="closeAbout()" style="width:100%;height:44px">Got it</button>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="stats-overlay" onclick="handleOverlayClick(event,'stats-overlay')">
+  <div class="sheet" id="stats-sheet"></div>
+</div>
+
+<div class="milestone-toast" id="milestone-toast">
+  <div class="milestone-icon" id="milestone-icon"></div>
+  <div class="milestone-title" id="milestone-title"></div>
+  <div class="milestone-sub"   id="milestone-sub"></div>
+</div>
+
+<script>
+const PLAYERS = [
+  { id:1,   name:"Bukayo Saka",              emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Arsenal",        clubCode:"ARS", pos:"FWD", age:22, height:178, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:2,   name:"Martin Ødegaard",          emoji:"🇳🇴", nat:"Norway",       natCode:"NO", club:"Arsenal",        clubCode:"ARS", pos:"MID", age:26, height:178, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:3,   name:"Declan Rice",              emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Arsenal",        clubCode:"ARS", pos:"MID", age:25, height:185, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:4,   name:"Gabriel Magalhães",        emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Arsenal",        clubCode:"ARS", pos:"DEF", age:26, height:190, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:5,   name:"Kai Havertz",              emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Arsenal",        clubCode:"ARS", pos:"FWD", age:25, height:189, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:6,   name:"David Raya",               emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Arsenal",        clubCode:"ARS", pos:"GK",  age:29, height:183, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:7,   name:"Leandro Trossard",         emoji:"🇧🇪", nat:"Belgium",      natCode:"BE", club:"Arsenal",        clubCode:"ARS", pos:"FWD", age:29, height:173, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:8,   name:"Cole Palmer",              emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Chelsea",        clubCode:"CHE", pos:"MID", age:22, height:185, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:9,   name:"Enzo Fernández",           emoji:"🇦🇷", nat:"Argentina",    natCode:"AR", club:"Chelsea",        clubCode:"CHE", pos:"MID", age:23, height:178, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:10,  name:"Nicolas Jackson",          emoji:"🇸🇳", nat:"Senegal",      natCode:"SN", club:"Chelsea",        clubCode:"CHE", pos:"FWD", age:23, height:185, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:11,  name:"Reece James",              emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Chelsea",        clubCode:"CHE", pos:"DEF", age:24, height:180, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:12,  name:"Moisés Caicedo",           emoji:"🇪🇨", nat:"Ecuador",      natCode:"EC", club:"Chelsea",        clubCode:"CHE", pos:"MID", age:22, height:178, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:13,  name:"Mohamed Salah",            emoji:"🇪🇬", nat:"Egypt",        natCode:"EG", club:"Liverpool",      clubCode:"LIV", pos:"FWD", age:32, height:175, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:14,  name:"Virgil van Dijk",          emoji:"🇳🇱", nat:"Netherlands",  natCode:"NL", club:"Liverpool",      clubCode:"LIV", pos:"DEF", age:32, height:193, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:15,  name:"Alisson Becker",           emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Liverpool",      clubCode:"LIV", pos:"GK",  age:31, height:191, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:16,  name:"Trent Alexander-Arnold",   emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Liverpool",      clubCode:"LIV", pos:"MID", age:26, height:175, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:17,  name:"Darwin Núñez",             emoji:"🇺🇾", nat:"Uruguay",      natCode:"UY", club:"Liverpool",      clubCode:"LIV", pos:"FWD", age:25, height:187, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:18,  name:"Dominik Szoboszlai",       emoji:"🇭🇺", nat:"Hungary",      natCode:"HU", club:"Liverpool",      clubCode:"LIV", pos:"MID", age:23, height:186, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:19,  name:"Luis Díaz",                emoji:"🇨🇴", nat:"Colombia",     natCode:"CO", club:"Liverpool",      clubCode:"LIV", pos:"FWD", age:27, height:180, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:20,  name:"Ryan Gravenberch",         emoji:"🇳🇱", nat:"Netherlands",  natCode:"NL", club:"Liverpool",      clubCode:"LIV", pos:"MID", age:22, height:190, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:21,  name:"Erling Haaland",           emoji:"🇳🇴", nat:"Norway",       natCode:"NO", club:"Man City",       clubCode:"MCI", pos:"FWD", age:23, height:194, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:22,  name:"Phil Foden",               emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Man City",       clubCode:"MCI", pos:"MID", age:24, height:171, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:23,  name:"Rodri",                    emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Man City",       clubCode:"MCI", pos:"MID", age:27, height:191, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:24,  name:"Rúben Dias",               emoji:"🇵🇹", nat:"Portugal",     natCode:"PT", club:"Man City",       clubCode:"MCI", pos:"DEF", age:26, height:187, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:25,  name:"Kevin De Bruyne",          emoji:"🇧🇪", nat:"Belgium",      natCode:"BE", club:"Man City",       clubCode:"MCI", pos:"MID", age:33, height:181, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:26,  name:"Bernardo Silva",           emoji:"🇵🇹", nat:"Portugal",     natCode:"PT", club:"Man City",       clubCode:"MCI", pos:"MID", age:29, height:173, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:27,  name:"Ederson",                  emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Man City",       clubCode:"MCI", pos:"GK",  age:30, height:188, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:28,  name:"Jack Grealish",            emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Man City",       clubCode:"MCI", pos:"FWD", age:28, height:180, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:29,  name:"Kyle Walker",              emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Man City",       clubCode:"MCI", pos:"DEF", age:34, height:178, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:30,  name:"Bruno Fernandes",          emoji:"🇵🇹", nat:"Portugal",     natCode:"PT", club:"Man Utd",        clubCode:"MNU", pos:"MID", age:29, height:179, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:31,  name:"Rasmus Højlund",           emoji:"🇩🇰", nat:"Denmark",      natCode:"DK", club:"Man Utd",        clubCode:"MNU", pos:"FWD", age:21, height:191, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:32,  name:"André Onana",              emoji:"🇨🇲", nat:"Cameroon",     natCode:"CM", club:"Man Utd",        clubCode:"MNU", pos:"GK",  age:28, height:190, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:33,  name:"Marcus Rashford",          emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Man Utd",        clubCode:"MNU", pos:"FWD", age:27, height:180, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:34,  name:"Kobbie Mainoo",            emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Man Utd",        clubCode:"MNU", pos:"MID", age:19, height:180, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:35,  name:"Son Heung-min",            emoji:"🇰🇷", nat:"South Korea",  natCode:"KR", club:"Tottenham",      clubCode:"TOT", pos:"FWD", age:31, height:183, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:36,  name:"James Maddison",           emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Tottenham",      clubCode:"TOT", pos:"MID", age:27, height:175, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:37,  name:"Dejan Kulusevski",         emoji:"🇸🇪", nat:"Sweden",       natCode:"SE", club:"Tottenham",      clubCode:"TOT", pos:"FWD", age:24, height:185, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:38,  name:"Alexander Isak",           emoji:"🇸🇪", nat:"Sweden",       natCode:"SE", club:"Newcastle",      clubCode:"NEW", pos:"FWD", age:24, height:190, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:39,  name:"Bruno Guimarães",          emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Newcastle",      clubCode:"NEW", pos:"MID", age:26, height:182, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:40,  name:"Anthony Gordon",           emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Newcastle",      clubCode:"NEW", pos:"FWD", age:23, height:181, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:41,  name:"Ollie Watkins",            emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Aston Villa",   clubCode:"AVL", pos:"FWD", age:28, height:180, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:42,  name:"Emiliano Martínez",        emoji:"🇦🇷", nat:"Argentina",    natCode:"AR", club:"Aston Villa",   clubCode:"AVL", pos:"GK",  age:31, height:195, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:43,  name:"Youri Tielemans",          emoji:"🇧🇪", nat:"Belgium",      natCode:"BE", club:"Aston Villa",   clubCode:"AVL", pos:"MID", age:27, height:176, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:44,  name:"Morgan Rogers",            emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Aston Villa",   clubCode:"AVL", pos:"MID", age:21, height:184, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:45,  name:"Joao Pedro",               emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Brighton",       clubCode:"BHA", pos:"FWD", age:22, height:181, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:46,  name:"Matheus Cunha",            emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Wolves",         clubCode:"WOL", pos:"FWD", age:25, height:181, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:47,  name:"Jordan Pickford",          emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Everton",       clubCode:"EVE", pos:"GK",  age:30, height:185, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:48,  name:"Jarrod Bowen",             emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"West Ham",      clubCode:"WHU", pos:"FWD", age:27, height:175, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:49,  name:"Andreas Pereira",          emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Fulham",         clubCode:"FUL", pos:"MID", age:28, height:178, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:50,  name:"Bryan Mbeumo",             emoji:"🇨🇲", nat:"Cameroon",     natCode:"CM", club:"Brentford",      clubCode:"BRE", pos:"FWD", age:24, height:174, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:51,  name:"Kylian Mbappé",            emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Real Madrid",    clubCode:"RMA", pos:"FWD", age:25, height:178, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:52,  name:"Vinicius Jr.",             emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Real Madrid",    clubCode:"RMA", pos:"FWD", age:23, height:176, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:53,  name:"Jude Bellingham",          emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Real Madrid",    clubCode:"RMA", pos:"MID", age:20, height:186, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:54,  name:"Thibaut Courtois",         emoji:"🇧🇪", nat:"Belgium",      natCode:"BE", club:"Real Madrid",    clubCode:"RMA", pos:"GK",  age:31, height:199, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:55,  name:"Federico Valverde",        emoji:"🇺🇾", nat:"Uruguay",      natCode:"UY", club:"Real Madrid",    clubCode:"RMA", pos:"MID", age:25, height:182, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:56,  name:"Aurélien Tchouaméni",      emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Real Madrid",    clubCode:"RMA", pos:"MID", age:24, height:187, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:57,  name:"Éder Militão",             emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Real Madrid",    clubCode:"RMA", pos:"DEF", age:26, height:186, league:"La Liga",         leagueCode:"LL", fame:"PRO"    },
+  { id:58,  name:"Antonio Rüdiger",          emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Real Madrid",    clubCode:"RMA", pos:"DEF", age:31, height:190, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:59,  name:"Dani Carvajal",            emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Real Madrid",    clubCode:"RMA", pos:"DEF", age:32, height:173, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:60,  name:"Rodrygo",                  emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Real Madrid",    clubCode:"RMA", pos:"FWD", age:23, height:174, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:61,  name:"Luca Modric",              emoji:"🇭🇷", nat:"Croatia",      natCode:"HR", club:"Real Madrid",    clubCode:"RMA", pos:"MID", age:38, height:172, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:62,  name:"Lamine Yamal",             emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Barcelona",      clubCode:"BAR", pos:"FWD", age:17, height:180, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:63,  name:"Pedri",                    emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Barcelona",      clubCode:"BAR", pos:"MID", age:22, height:174, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:64,  name:"Gavi",                     emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Barcelona",      clubCode:"BAR", pos:"MID", age:20, height:173, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:65,  name:"Robert Lewandowski",       emoji:"🇵🇱", nat:"Poland",       natCode:"PL", club:"Barcelona",      clubCode:"BAR", pos:"FWD", age:35, height:184, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:66,  name:"Marc-André ter Stegen",    emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Barcelona",      clubCode:"BAR", pos:"GK",  age:32, height:187, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:67,  name:"Raphinha",                 emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Barcelona",      clubCode:"BAR", pos:"FWD", age:27, height:176, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:68,  name:"Jules Koundé",             emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Barcelona",      clubCode:"BAR", pos:"DEF", age:25, height:178, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:69,  name:"Alejandro Balde",          emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Barcelona",      clubCode:"BAR", pos:"DEF", age:20, height:180, league:"La Liga",         leagueCode:"LL", fame:"PRO"    },
+  { id:70,  name:"Frenkie de Jong",          emoji:"🇳🇱", nat:"Netherlands",  natCode:"NL", club:"Barcelona",      clubCode:"BAR", pos:"MID", age:27, height:180, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:71,  name:"Dani Olmo",                emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Barcelona",      clubCode:"BAR", pos:"MID", age:26, height:179, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:72,  name:"Antoine Griezmann",        emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Atletico Madrid",clubCode:"ATM", pos:"FWD", age:33, height:176, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:73,  name:"Jan Oblak",                emoji:"🇸🇮", nat:"Slovenia",     natCode:"SI", club:"Atletico Madrid",clubCode:"ATM", pos:"GK",  age:31, height:188, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:74,  name:"Julián Álvarez",           emoji:"🇦🇷", nat:"Argentina",    natCode:"AR", club:"Atletico Madrid",clubCode:"ATM", pos:"FWD", age:24, height:170, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:75,  name:"Samuel Lino",              emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Atletico Madrid",clubCode:"ATM", pos:"FWD", age:24, height:178, league:"La Liga",         leagueCode:"LL", fame:"PRO"    },
+  { id:76,  name:"Marcos Llorente",          emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Atletico Madrid",clubCode:"ATM", pos:"MID", age:29, height:183, league:"La Liga",         leagueCode:"LL", fame:"PRO"    },
+  { id:77,  name:"Isco",                     emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Real Betis",     clubCode:"BET", pos:"MID", age:31, height:176, league:"La Liga",         leagueCode:"LL", fame:"PRO"    },
+  { id:78,  name:"Ander Herrera",            emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Athletic Bilbao",clubCode:"ATH", pos:"MID", age:34, height:181, league:"La Liga",         leagueCode:"LL", fame:"PRO"    },
+  { id:79,  name:"Unai Simón",               emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Athletic Bilbao",clubCode:"ATH", pos:"GK",  age:27, height:189, league:"La Liga",         leagueCode:"LL", fame:"PRO"    },
+  { id:80,  name:"Bryan Gil",                emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Girona",         clubCode:"GIR", pos:"FWD", age:23, height:172, league:"La Liga",         leagueCode:"LL", fame:"PRO"    },
+  { id:81,  name:"Lautaro Martínez",         emoji:"🇦🇷", nat:"Argentina",    natCode:"AR", club:"Inter Milan",    clubCode:"INT", pos:"FWD", age:26, height:174, league:"Serie A",         leagueCode:"SA", fame:"STAR"   },
+  { id:82,  name:"Marcus Thuram",            emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Inter Milan",    clubCode:"INT", pos:"FWD", age:26, height:187, league:"Serie A",         leagueCode:"SA", fame:"STAR"   },
+  { id:83,  name:"Nicolò Barella",           emoji:"🇮🇹", nat:"Italy",        natCode:"IT", club:"Inter Milan",    clubCode:"INT", pos:"MID", age:27, height:172, league:"Serie A",         leagueCode:"SA", fame:"STAR"   },
+  { id:84,  name:"Hakan Çalhanoğlu",         emoji:"🇹🇷", nat:"Turkey",       natCode:"TR", club:"Inter Milan",    clubCode:"INT", pos:"MID", age:29, height:179, league:"Serie A",         leagueCode:"SA", fame:"STAR"   },
+  { id:85,  name:"Alessandro Bastoni",       emoji:"🇮🇹", nat:"Italy",        natCode:"IT", club:"Inter Milan",    clubCode:"INT", pos:"DEF", age:25, height:190, league:"Serie A",         leagueCode:"SA", fame:"STAR"   },
+  { id:86,  name:"Yann Sommer",              emoji:"🇨🇭", nat:"Switzerland",  natCode:"CH", club:"Inter Milan",    clubCode:"INT", pos:"GK",  age:35, height:183, league:"Serie A",         leagueCode:"SA", fame:"PRO"    },
+  { id:87,  name:"Rafael Leão",              emoji:"🇵🇹", nat:"Portugal",     natCode:"PT", club:"AC Milan",       clubCode:"MIL", pos:"FWD", age:24, height:188, league:"Serie A",         leagueCode:"SA", fame:"STAR"   },
+  { id:88,  name:"Theo Hernández",           emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"AC Milan",       clubCode:"MIL", pos:"DEF", age:26, height:184, league:"Serie A",         leagueCode:"SA", fame:"STAR"   },
+  { id:89,  name:"Mike Maignan",             emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"AC Milan",       clubCode:"MIL", pos:"GK",  age:28, height:191, league:"Serie A",         leagueCode:"SA", fame:"STAR"   },
+  { id:90,  name:"Christian Pulisic",        emoji:"🇺🇸", nat:"USA",          natCode:"US", club:"AC Milan",       clubCode:"MIL", pos:"FWD", age:26, height:177, league:"Serie A",         leagueCode:"SA", fame:"STAR"   },
+  { id:91,  name:"Tijjani Reijnders",        emoji:"🇳🇱", nat:"Netherlands",  natCode:"NL", club:"AC Milan",       clubCode:"MIL", pos:"MID", age:25, height:185, league:"Serie A",         leagueCode:"SA", fame:"PRO"    },
+  { id:92,  name:"Dušan Vlahović",           emoji:"🇷🇸", nat:"Serbia",       natCode:"RS", club:"Juventus",       clubCode:"JUV", pos:"FWD", age:24, height:190, league:"Serie A",         leagueCode:"SA", fame:"STAR"   },
+  { id:93,  name:"Federico Chiesa",          emoji:"🇮🇹", nat:"Italy",        natCode:"IT", club:"Liverpool",      clubCode:"LIV", pos:"FWD", age:26, height:175, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:94,  name:"Adrien Rabiot",            emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Juventus",       clubCode:"JUV", pos:"MID", age:29, height:188, league:"Serie A",         leagueCode:"SA", fame:"PRO"    },
+  { id:95,  name:"Gleison Bremer",           emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Juventus",       clubCode:"JUV", pos:"DEF", age:27, height:188, league:"Serie A",         leagueCode:"SA", fame:"PRO"    },
+  { id:96,  name:"Khvicha Kvaratskhelia",    emoji:"🇬🇪", nat:"Georgia",      natCode:"GE", club:"PSG",            clubCode:"PSG", pos:"FWD", age:23, height:183, league:"Ligue 1",         leagueCode:"L1", fame:"STAR"   },
+  { id:97,  name:"Victor Osimhen",           emoji:"🇳🇬", nat:"Nigeria",      natCode:"NG", club:"Galatasaray",    clubCode:"GAL", pos:"FWD", age:25, height:185, league:"Süper Lig",       leagueCode:"SK", fame:"STAR"   },
+  { id:98,  name:"Romelu Lukaku",            emoji:"🇧🇪", nat:"Belgium",      natCode:"BE", club:"Napoli",         clubCode:"NAP", pos:"FWD", age:31, height:190, league:"Serie A",         leagueCode:"SA", fame:"STAR"   },
+  { id:99,  name:"Scott McTominay",          emoji:"🏴󠁧󠁢󠁳󠁣󠁴󠁿", nat:"Scotland",     natCode:"SC", club:"Napoli",         clubCode:"NAP", pos:"MID", age:27, height:190, league:"Serie A",         leagueCode:"SA", fame:"PRO"    },
+  { id:100, name:"Paulo Dybala",             emoji:"🇦🇷", nat:"Argentina",    natCode:"AR", club:"Roma",           clubCode:"ROM", pos:"FWD", age:30, height:177, league:"Serie A",         leagueCode:"SA", fame:"STAR"   },
+  { id:101, name:"Artem Dovbyk",             emoji:"🇺🇦", nat:"Ukraine",      natCode:"UA", club:"Roma",           clubCode:"ROM", pos:"FWD", age:27, height:190, league:"Serie A",         leagueCode:"SA", fame:"PRO"    },
+  { id:102, name:"Ciro Immobile",            emoji:"🇮🇹", nat:"Italy",        natCode:"IT", club:"Besiktas",       clubCode:"BJK", pos:"FWD", age:34, height:185, league:"Süper Lig",       leagueCode:"SK", fame:"PRO"    },
+  { id:103, name:"Matteo Guendouzi",         emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Lazio",          clubCode:"LAZ", pos:"MID", age:25, height:186, league:"Serie A",         leagueCode:"SA", fame:"PRO"    },
+  { id:104, name:"Ademola Lookman",          emoji:"🇳🇬", nat:"Nigeria",      natCode:"NG", club:"Atalanta",       clubCode:"ATA", pos:"FWD", age:26, height:174, league:"Serie A",         leagueCode:"SA", fame:"STAR"   },
+  { id:105, name:"Albert Gudmundsson",       emoji:"🇮🇸", nat:"Iceland",      natCode:"IS", club:"Fiorentina",     clubCode:"FIO", pos:"FWD", age:26, height:181, league:"Serie A",         leagueCode:"SA", fame:"PRO"    },
+  { id:106, name:"Lorenzo Pellegrini",       emoji:"🇮🇹", nat:"Italy",        natCode:"IT", club:"Roma",           clubCode:"ROM", pos:"MID", age:27, height:185, league:"Serie A",         leagueCode:"SA", fame:"PRO"    },
+  { id:107, name:"Harry Kane",               emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Bayern Munich",  clubCode:"BAY", pos:"FWD", age:30, height:188, league:"Bundesliga",     leagueCode:"BL", fame:"STAR"   },
+  { id:108, name:"Leroy Sané",               emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Bayern Munich",  clubCode:"BAY", pos:"FWD", age:28, height:183, league:"Bundesliga",     leagueCode:"BL", fame:"STAR"   },
+  { id:109, name:"Jamal Musiala",            emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Bayern Munich",  clubCode:"BAY", pos:"MID", age:21, height:180, league:"Bundesliga",     leagueCode:"BL", fame:"STAR"   },
+  { id:110, name:"Manuel Neuer",             emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Bayern Munich",  clubCode:"BAY", pos:"GK",  age:38, height:193, league:"Bundesliga",     leagueCode:"BL", fame:"STAR"   },
+  { id:111, name:"Thomas Müller",            emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Bayern Munich",  clubCode:"BAY", pos:"FWD", age:34, height:185, league:"Bundesliga",     leagueCode:"BL", fame:"STAR"   },
+  { id:112, name:"Joshua Kimmich",           emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Bayern Munich",  clubCode:"BAY", pos:"MID", age:29, height:177, league:"Bundesliga",     leagueCode:"BL", fame:"STAR"   },
+  { id:113, name:"Alphonso Davies",          emoji:"🇨🇦", nat:"Canada",       natCode:"CA", club:"Bayern Munich",  clubCode:"BAY", pos:"DEF", age:23, height:183, league:"Bundesliga",     leagueCode:"BL", fame:"STAR"   },
+  { id:114, name:"Kim Min-jae",              emoji:"🇰🇷", nat:"South Korea",  natCode:"KR", club:"Bayern Munich",  clubCode:"BAY", pos:"DEF", age:27, height:190, league:"Bundesliga",     leagueCode:"BL", fame:"STAR"   },
+  { id:115, name:"Leon Goretzka",            emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Bayern Munich",  clubCode:"BAY", pos:"MID", age:29, height:189, league:"Bundesliga",     leagueCode:"BL", fame:"PRO"    },
+  { id:116, name:"Karim Adeyemi",            emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Dortmund",       clubCode:"BVB", pos:"FWD", age:22, height:180, league:"Bundesliga",     leagueCode:"BL", fame:"PRO"    },
+  { id:117, name:"Julian Brandt",            emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Dortmund",       clubCode:"BVB", pos:"MID", age:28, height:185, league:"Bundesliga",     leagueCode:"BL", fame:"PRO"    },
+  { id:118, name:"Gregor Kobel",             emoji:"🇨🇭", nat:"Switzerland",  natCode:"CH", club:"Dortmund",       clubCode:"BVB", pos:"GK",  age:26, height:194, league:"Bundesliga",     leagueCode:"BL", fame:"PRO"    },
+  { id:119, name:"Emre Can",                 emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Dortmund",       clubCode:"BVB", pos:"MID", age:30, height:184, league:"Bundesliga",     leagueCode:"BL", fame:"PRO"    },
+  { id:120, name:"Granit Xhaka",             emoji:"🇨🇭", nat:"Switzerland",  natCode:"CH", club:"Leverkusen",     clubCode:"LEV", pos:"MID", age:31, height:183, league:"Bundesliga",     leagueCode:"BL", fame:"STAR"   },
+  { id:121, name:"Florian Wirtz",            emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Leverkusen",     clubCode:"LEV", pos:"MID", age:21, height:180, league:"Bundesliga",     leagueCode:"BL", fame:"STAR"   },
+  { id:122, name:"Patrik Schick",            emoji:"🇨🇿", nat:"Czech Republic",natCode:"CZ",club:"Leverkusen",    clubCode:"LEV", pos:"FWD", age:28, height:191, league:"Bundesliga",     leagueCode:"BL", fame:"PRO"    },
+  { id:123, name:"Xavi Simons",              emoji:"🇳🇱", nat:"Netherlands",  natCode:"NL", club:"Leipzig",        clubCode:"RBL", pos:"MID", age:21, height:174, league:"Bundesliga",     leagueCode:"BL", fame:"STAR"   },
+  { id:124, name:"Lois Openda",              emoji:"🇧🇪", nat:"Belgium",      natCode:"BE", club:"Leipzig",        clubCode:"RBL", pos:"FWD", age:24, height:178, league:"Bundesliga",     leagueCode:"BL", fame:"PRO"    },
+  { id:125, name:"Omar Marmoush",            emoji:"🇪🇬", nat:"Egypt",        natCode:"EG", club:"Man City",       clubCode:"MCI", pos:"FWD", age:25, height:180, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:126, name:"Ousmane Dembélé",          emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"PSG",            clubCode:"PSG", pos:"FWD", age:27, height:178, league:"Ligue 1",         leagueCode:"L1", fame:"STAR"   },
+  { id:127, name:"Gianluigi Donnarumma",     emoji:"🇮🇹", nat:"Italy",        natCode:"IT", club:"PSG",            clubCode:"PSG", pos:"GK",  age:25, height:196, league:"Ligue 1",         leagueCode:"L1", fame:"STAR"   },
+  { id:128, name:"Marquinhos",               emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"PSG",            clubCode:"PSG", pos:"DEF", age:30, height:183, league:"Ligue 1",         leagueCode:"L1", fame:"STAR"   },
+  { id:129, name:"Vitinha",                  emoji:"🇵🇹", nat:"Portugal",     natCode:"PT", club:"PSG",            clubCode:"PSG", pos:"MID", age:24, height:169, league:"Ligue 1",         leagueCode:"L1", fame:"PRO"    },
+  { id:130, name:"Fabian Ruiz",              emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"PSG",            clubCode:"PSG", pos:"MID", age:27, height:189, league:"Ligue 1",         leagueCode:"L1", fame:"PRO"    },
+  { id:131, name:"Gonçalo Ramos",            emoji:"🇵🇹", nat:"Portugal",     natCode:"PT", club:"PSG",            clubCode:"PSG", pos:"FWD", age:23, height:187, league:"Ligue 1",         leagueCode:"L1", fame:"PRO"    },
+  { id:132, name:"Wissam Ben Yedder",        emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Monaco",         clubCode:"MON", pos:"FWD", age:33, height:170, league:"Ligue 1",         leagueCode:"L1", fame:"PRO"    },
+  { id:133, name:"Pierre-Emerick Aubameyang",emoji:"🇬🇦", nat:"Gabon",        natCode:"GA", club:"Marseille",      clubCode:"MAR", pos:"FWD", age:34, height:187, league:"Ligue 1",         leagueCode:"L1", fame:"STAR"   },
+  { id:134, name:"Alexandre Lacazette",      emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Lyon",           clubCode:"LYO", pos:"FWD", age:32, height:175, league:"Ligue 1",         leagueCode:"L1", fame:"STAR"   },
+  { id:135, name:"Jonathan David",           emoji:"🇨🇦", nat:"Canada",       natCode:"CA", club:"Lille",          clubCode:"LIL", pos:"FWD", age:24, height:180, league:"Ligue 1",         leagueCode:"L1", fame:"STAR"   },
+  { id:136, name:"Nuno Mendes",              emoji:"🇵🇹", nat:"Portugal",     natCode:"PT", club:"PSG",            clubCode:"PSG", pos:"DEF", age:22, height:180, league:"Ligue 1",         leagueCode:"L1", fame:"PRO"    },
+  { id:137, name:"Mason Greenwood",          emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Marseille",      clubCode:"MAR", pos:"FWD", age:23, height:181, league:"Ligue 1",         leagueCode:"L1", fame:"PRO"    },
+  { id:138, name:"Endrick",                  emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Real Madrid",    clubCode:"RMA", pos:"FWD", age:18, height:173, league:"La Liga",         leagueCode:"LL", fame:"PRO"    },
+  { id:139, name:"Lionel Messi",             emoji:"🇦🇷", nat:"Argentina",    natCode:"AR", club:"Inter Miami",    clubCode:"IMI", pos:"FWD", age:37, height:170, league:"MLS",            leagueCode:"ML", fame:"STAR"   },
+  { id:140, name:"Ángel Di María",           emoji:"🇦🇷", nat:"Argentina",    natCode:"AR", club:"Benfica",        clubCode:"BEN", pos:"FWD", age:36, height:178, league:"Primeira Liga",   leagueCode:"PP", fame:"STAR"   },
+  { id:141, name:"N'Golo Kanté",             emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Al-Ittihad",     clubCode:"ALI", pos:"MID", age:33, height:168, league:"Saudi Pro League",leagueCode:"SP", fame:"STAR"   },
+  { id:142, name:"Kingsley Coman",           emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Bayern Munich",  clubCode:"BAY", pos:"FWD", age:28, height:183, league:"Bundesliga",     leagueCode:"BL", fame:"PRO"    },
+  { id:143, name:"William Saliba",           emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Arsenal",        clubCode:"ARS", pos:"DEF", age:23, height:192, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:144, name:"Randal Kolo Muani",        emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Juventus",       clubCode:"JUV", pos:"FWD", age:25, height:187, league:"Serie A",         leagueCode:"SA", fame:"PRO"    },
+  { id:145, name:"John Stones",              emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Man City",       clubCode:"MCI", pos:"DEF", age:29, height:188, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:146, name:"Luke Shaw",                emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Man Utd",        clubCode:"MNU", pos:"DEF", age:28, height:185, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:147, name:"Conor Gallagher",          emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Atletico Madrid",clubCode:"ATM", pos:"MID", age:24, height:183, league:"La Liga",         leagueCode:"LL", fame:"PRO"    },
+  { id:148, name:"Eberechi Eze",             emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Crystal Palace", clubCode:"CRY", pos:"MID", age:25, height:175, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:149, name:"Álvaro Morata",            emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"AC Milan",       clubCode:"MIL", pos:"FWD", age:31, height:187, league:"Serie A",         leagueCode:"SA", fame:"PRO"    },
+  { id:150, name:"Mikel Merino",             emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Arsenal",        clubCode:"ARS", pos:"MID", age:27, height:189, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:151, name:"Mikel Oyarzabal",          emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Real Sociedad",  clubCode:"SOC", pos:"FWD", age:27, height:179, league:"La Liga",         leagueCode:"LL", fame:"PRO"    },
+  { id:152, name:"İlkay Gündoğan",           emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Barcelona",      clubCode:"BAR", pos:"MID", age:33, height:180, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:153, name:"Cristiano Ronaldo",        emoji:"🇵🇹", nat:"Portugal",     natCode:"PT", club:"Al-Nassr",       clubCode:"ANS", pos:"FWD", age:39, height:187, league:"Saudi Pro League",leagueCode:"SP", fame:"STAR"   },
+  { id:154, name:"Bernardo Silva",           emoji:"🇵🇹", nat:"Portugal",     natCode:"PT", club:"Man City",       clubCode:"MCI", pos:"MID", age:29, height:173, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:155, name:"João Cancelo",             emoji:"🇵🇹", nat:"Portugal",     natCode:"PT", club:"Barcelona",      clubCode:"BAR", pos:"DEF", age:30, height:182, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:156, name:"João Félix",               emoji:"🇵🇹", nat:"Portugal",     natCode:"PT", club:"Chelsea",        clubCode:"CHE", pos:"FWD", age:24, height:181, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:157, name:"Diogo Jota",               emoji:"🇵🇹", nat:"Portugal",     natCode:"PT", club:"Liverpool",      clubCode:"LIV", pos:"FWD", age:27, height:178, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:158, name:"Memphis Depay",            emoji:"🇳🇱", nat:"Netherlands",  natCode:"NL", club:"Atletico Madrid",clubCode:"ATM", pos:"FWD", age:30, height:176, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:159, name:"Cody Gakpo",               emoji:"🇳🇱", nat:"Netherlands",  natCode:"NL", club:"Liverpool",      clubCode:"LIV", pos:"FWD", age:25, height:189, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:160, name:"Kevin De Bruyne",          emoji:"🇧🇪", nat:"Belgium",      natCode:"BE", club:"Man City",       clubCode:"MCI", pos:"MID", age:33, height:181, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:161, name:"Lois Openda",              emoji:"🇧🇪", nat:"Belgium",      natCode:"BE", club:"Leipzig",        clubCode:"RBL", pos:"FWD", age:24, height:178, league:"Bundesliga",     leagueCode:"BL", fame:"PRO"    },
+  { id:162, name:"Giacomo Raspadori",        emoji:"🇮🇹", nat:"Italy",        natCode:"IT", club:"Napoli",         clubCode:"NAP", pos:"FWD", age:24, height:173, league:"Serie A",         leagueCode:"SA", fame:"PRO"    },
+  { id:163, name:"Giovanni Di Lorenzo",      emoji:"🇮🇹", nat:"Italy",        natCode:"IT", club:"Napoli",         clubCode:"NAP", pos:"DEF", age:30, height:183, league:"Serie A",         leagueCode:"SA", fame:"PRO"    },
+  { id:164, name:"Christian Pulisic",        emoji:"🇺🇸", nat:"USA",          natCode:"US", club:"AC Milan",       clubCode:"MIL", pos:"FWD", age:26, height:177, league:"Serie A",         leagueCode:"SA", fame:"STAR"   },
+  { id:165, name:"Weston McKennie",          emoji:"🇺🇸", nat:"USA",          natCode:"US", club:"Juventus",       clubCode:"JUV", pos:"MID", age:25, height:184, league:"Serie A",         leagueCode:"SA", fame:"PRO"    },
+  { id:166, name:"Tyler Adams",              emoji:"🇺🇸", nat:"USA",          natCode:"US", club:"Bournemouth",    clubCode:"BOU", pos:"MID", age:25, height:177, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:167, name:"Achraf Hakimi",            emoji:"🇲🇦", nat:"Morocco",      natCode:"MA", club:"PSG",            clubCode:"PSG", pos:"DEF", age:25, height:181, league:"Ligue 1",         leagueCode:"L1", fame:"STAR"   },
+  { id:168, name:"Hakim Ziyech",             emoji:"🇲🇦", nat:"Morocco",      natCode:"MA", club:"Galatasaray",    clubCode:"GAL", pos:"FWD", age:31, height:181, league:"Süper Lig",       leagueCode:"SK", fame:"PRO"    },
+  { id:169, name:"Sadio Mané",               emoji:"🇸🇳", nat:"Senegal",      natCode:"SN", club:"Al-Nassr",       clubCode:"ANS", pos:"FWD", age:32, height:175, league:"Saudi Pro League",leagueCode:"SP", fame:"STAR"   },
+  { id:170, name:"Ademola Lookman",          emoji:"🇳🇬", nat:"Nigeria",      natCode:"NG", club:"Atalanta",       clubCode:"ATA", pos:"FWD", age:26, height:174, league:"Serie A",         leagueCode:"SA", fame:"STAR"   },
+  { id:171, name:"Mateo Kovačić",            emoji:"🇭🇷", nat:"Croatia",      natCode:"HR", club:"Man City",       clubCode:"MCI", pos:"MID", age:29, height:177, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:172, name:"Darwin Núñez",             emoji:"🇺🇾", nat:"Uruguay",      natCode:"UY", club:"Liverpool",      clubCode:"LIV", pos:"FWD", age:25, height:187, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:173, name:"Ronald Araújo",            emoji:"🇺🇾", nat:"Uruguay",      natCode:"UY", club:"Barcelona",      clubCode:"BAR", pos:"DEF", age:25, height:188, league:"La Liga",         leagueCode:"LL", fame:"STAR"   },
+  { id:174, name:"Luis Díaz",                emoji:"🇨🇴", nat:"Colombia",     natCode:"CO", club:"Liverpool",      clubCode:"LIV", pos:"FWD", age:27, height:180, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:175, name:"Moisés Caicedo",           emoji:"🇪🇨", nat:"Ecuador",      natCode:"EC", club:"Chelsea",        clubCode:"CHE", pos:"MID", age:22, height:178, league:"Premier League",  leagueCode:"PL", fame:"STAR"   },
+  { id:176, name:"Neymar Jr.",               emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Al-Hilal",       clubCode:"ALH", pos:"FWD", age:32, height:175, league:"Saudi Pro League",leagueCode:"SP", fame:"STAR"   },
+  { id:177, name:"Karim Benzema",            emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Al-Ittihad",     clubCode:"ALI", pos:"FWD", age:36, height:185, league:"Saudi Pro League",leagueCode:"SP", fame:"STAR"   },
+  { id:178, name:"Riyad Mahrez",             emoji:"🇩🇿", nat:"Algeria",      natCode:"DZ", club:"Al-Ahli",        clubCode:"ALAh",pos:"FWD", age:33, height:179, league:"Saudi Pro League",leagueCode:"SP", fame:"PRO"    },
+  { id:179, name:"Kaoru Mitoma",             emoji:"🇯🇵", nat:"Japan",        natCode:"JP", club:"Brighton",       clubCode:"BHA", pos:"FWD", age:26, height:178, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:180, name:"Lee Kang-in",              emoji:"🇰🇷", nat:"South Korea",  natCode:"KR", club:"PSG",            clubCode:"PSG", pos:"MID", age:23, height:173, league:"Ligue 1",         leagueCode:"L1", fame:"PRO"    },
+  { id:181, name:"Hirving Lozano",           emoji:"🇲🇽", nat:"Mexico",       natCode:"MX", club:"PSV",            clubCode:"PSV", pos:"FWD", age:29, height:174, league:"Eredivisie",     leagueCode:"ED", fame:"PRO"    },
+  { id:182, name:"Santiago Giménez",         emoji:"🇲🇽", nat:"Mexico",       natCode:"MX", club:"Feyenoord",      clubCode:"FEY", pos:"FWD", age:23, height:185, league:"Eredivisie",     leagueCode:"ED", fame:"PRO"    },
+  { id:183, name:"Edson Álvarez",            emoji:"🇲🇽", nat:"Mexico",       natCode:"MX", club:"West Ham",       clubCode:"WHU", pos:"MID", age:26, height:187, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:184, name:"Warren Zaire-Emery",       emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"PSG",            clubCode:"PSG", pos:"MID", age:17, height:182, league:"Ligue 1",         leagueCode:"L1", fame:"PRO"    },
+  { id:185, name:"Pau Cubarsí",              emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Barcelona",      clubCode:"BAR", pos:"DEF", age:17, height:184, league:"La Liga",         leagueCode:"LL", fame:"PRO"    },
+  { id:186, name:"Michael Olise",            emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Bayern Munich",  clubCode:"BAY", pos:"FWD", age:22, height:181, league:"Bundesliga",     leagueCode:"BL", fame:"PRO"    },
+  { id:187, name:"Bradley Barcola",          emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"PSG",            clubCode:"PSG", pos:"FWD", age:21, height:180, league:"Ligue 1",         leagueCode:"L1", fame:"PRO"    },
+  { id:188, name:"Désiré Doué",              emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"PSG",            clubCode:"PSG", pos:"FWD", age:19, height:179, league:"Ligue 1",         leagueCode:"L1", fame:"PRO"    },
+  { id:189, name:"Pedro Neto",               emoji:"🇵🇹", nat:"Portugal",     natCode:"PT", club:"Chelsea",        clubCode:"CHE", pos:"FWD", age:24, height:173, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:190, name:"Ismaïla Sarr",             emoji:"🇸🇳", nat:"Senegal",      natCode:"SN", club:"Crystal Palace", clubCode:"CRY", pos:"FWD", age:26, height:182, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:191, name:"Evan Ferguson",            emoji:"🇮🇪", nat:"Ireland",      natCode:"IE", club:"Brighton",       clubCode:"BHA", pos:"FWD", age:19, height:188, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:192, name:"Jhon Duran",               emoji:"🇨🇴", nat:"Colombia",     natCode:"CO", club:"Aston Villa",    clubCode:"AVL", pos:"FWD", age:20, height:187, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:193, name:"Noni Madueke",             emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Chelsea",        clubCode:"CHE", pos:"FWD", age:22, height:179, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:194, name:"Savinho",                  emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Man City",       clubCode:"MCI", pos:"FWD", age:20, height:175, league:"Premier League",  leagueCode:"PL", fame:"PRO"    },
+  { id:195, name:"Jamie Gittens",            emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Dortmund",       clubCode:"BVB", pos:"FWD", age:20, height:175, league:"Bundesliga",     leagueCode:"BL", fame:"PRO"    },
+  { id:196, name:"Mathys Tel",               emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Bayern Munich",  clubCode:"BAY", pos:"FWD", age:19, height:182, league:"Bundesliga",     leagueCode:"BL", fame:"PRO"    },
+  // ── LEGENDS ────────────────────────────────────────────────
+  { id:200, name:"Pelé ✝",                     emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Santos",         clubCode:"SAN", pos:"FWD", age:84, height:173, league:"Brasileirao",    leagueCode:"BR", fame:"LEGEND" },
+  { id:201, name:"Diego Maradona ✝",           emoji:"🇦🇷", nat:"Argentina",    natCode:"AR", club:"Napoli",         clubCode:"NAP", pos:"FWD", age:60, height:165, league:"Serie A",         leagueCode:"SA", fame:"LEGEND" },
+  { id:202, name:"Ronaldo Nazário",          emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Real Madrid",    clubCode:"RMA", pos:"FWD", age:48, height:183, league:"La Liga",         leagueCode:"LL", fame:"LEGEND" },
+  { id:203, name:"Ronaldinho",               emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Barcelona",      clubCode:"BAR", pos:"FWD", age:45, height:181, league:"La Liga",         leagueCode:"LL", fame:"LEGEND" },
+  { id:204, name:"Zinedine Zidane",          emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Real Madrid",    clubCode:"RMA", pos:"MID", age:53, height:185, league:"La Liga",         leagueCode:"LL", fame:"LEGEND" },
+  { id:205, name:"Thierry Henry",            emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Arsenal",        clubCode:"ARS", pos:"FWD", age:47, height:188, league:"Premier League",  leagueCode:"PL", fame:"LEGEND" },
+  { id:206, name:"Andrés Iniesta",           emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Barcelona",      clubCode:"BAR", pos:"MID", age:40, height:171, league:"La Liga",         leagueCode:"LL", fame:"LEGEND" },
+  { id:207, name:"Xavi Hernández",           emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Barcelona",      clubCode:"BAR", pos:"MID", age:45, height:170, league:"La Liga",         leagueCode:"LL", fame:"LEGEND" },
+  { id:208, name:"Frank Lampard",            emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Chelsea",        clubCode:"CHE", pos:"MID", age:46, height:184, league:"Premier League",  leagueCode:"PL", fame:"LEGEND" },
+  { id:209, name:"Steven Gerrard",           emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Liverpool",      clubCode:"LIV", pos:"MID", age:45, height:183, league:"Premier League",  leagueCode:"PL", fame:"LEGEND" },
+  { id:210, name:"Wayne Rooney",             emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Man Utd",        clubCode:"MNU", pos:"FWD", age:39, height:176, league:"Premier League",  leagueCode:"PL", fame:"LEGEND" },
+  { id:211, name:"Rio Ferdinand",            emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Man Utd",        clubCode:"MNU", pos:"DEF", age:46, height:189, league:"Premier League",  leagueCode:"PL", fame:"LEGEND" },
+  { id:212, name:"Ryan Giggs",               emoji:"🏴󠁧󠁢󠁷󠁬󠁳󠁿", nat:"Wales",        natCode:"WL", club:"Man Utd",        clubCode:"MNU", pos:"FWD", age:51, height:179, league:"Premier League",  leagueCode:"PL", fame:"LEGEND" },
+  { id:213, name:"Gianluigi Buffon",         emoji:"🇮🇹", nat:"Italy",        natCode:"IT", club:"Juventus",       clubCode:"JUV", pos:"GK",  age:47, height:192, league:"Serie A",         leagueCode:"SA", fame:"LEGEND" },
+  { id:214, name:"Paolo Maldini",            emoji:"🇮🇹", nat:"Italy",        natCode:"IT", club:"AC Milan",       clubCode:"MIL", pos:"DEF", age:56, height:187, league:"Serie A",         leagueCode:"SA", fame:"LEGEND" },
+  { id:215, name:"Francesco Totti",          emoji:"🇮🇹", nat:"Italy",        natCode:"IT", club:"Roma",           clubCode:"ROM", pos:"FWD", age:48, height:180, league:"Serie A",         leagueCode:"SA", fame:"LEGEND" },
+  { id:216, name:"Oliver Kahn",              emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Bayern Munich",  clubCode:"BAY", pos:"GK",  age:56, height:188, league:"Bundesliga",     leagueCode:"BL", fame:"LEGEND" },
+  { id:217, name:"Michael Ballack",          emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Chelsea",        clubCode:"CHE", pos:"MID", age:48, height:189, league:"Premier League",  leagueCode:"PL", fame:"LEGEND" },
+  { id:218, name:"Miroslav Klose",           emoji:"🇩🇪", nat:"Germany",      natCode:"DE", club:"Bayern Munich",  clubCode:"BAY", pos:"FWD", age:47, height:182, league:"Bundesliga",     leagueCode:"BL", fame:"LEGEND" },
+  { id:219, name:"Patrick Vieira",           emoji:"🇫🇷", nat:"France",       natCode:"FR", club:"Arsenal",        clubCode:"ARS", pos:"MID", age:49, height:191, league:"Premier League",  leagueCode:"PL", fame:"LEGEND" },
+  { id:220, name:"Didier Drogba",            emoji:"🇨🇮", nat:"Ivory Coast",  natCode:"CI", club:"Chelsea",        clubCode:"CHE", pos:"FWD", age:47, height:189, league:"Premier League",  leagueCode:"PL", fame:"LEGEND" },
+  { id:221, name:"Samuel Eto'o",             emoji:"🇨🇲", nat:"Cameroon",     natCode:"CM", club:"Barcelona",      clubCode:"BAR", pos:"FWD", age:44, height:180, league:"La Liga",         leagueCode:"LL", fame:"LEGEND" },
+  { id:222, name:"Roberto Carlos",           emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"Real Madrid",    clubCode:"RMA", pos:"DEF", age:52, height:168, league:"La Liga",         leagueCode:"LL", fame:"LEGEND" },
+  { id:223, name:"Raúl",                     emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Real Madrid",    clubCode:"RMA", pos:"FWD", age:48, height:180, league:"La Liga",         leagueCode:"LL", fame:"LEGEND" },
+  { id:224, name:"Fernando Torres",          emoji:"🇪🇸", nat:"Spain",        natCode:"ES", club:"Atletico Madrid",clubCode:"ATM", pos:"FWD", age:41, height:183, league:"La Liga",         leagueCode:"LL", fame:"LEGEND" },
+  { id:225, name:"David Beckham",            emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Real Madrid",    clubCode:"RMA", pos:"MID", age:50, height:183, league:"La Liga",         leagueCode:"LL", fame:"LEGEND" },
+  { id:226, name:"Peter Schmeichel",         emoji:"🇩🇰", nat:"Denmark",      natCode:"DK", club:"Man Utd",        clubCode:"MNU", pos:"GK",  age:61, height:193, league:"Premier League",  leagueCode:"PL", fame:"LEGEND" },
+  { id:227, name:"Dennis Bergkamp",          emoji:"🇳🇱", nat:"Netherlands",  natCode:"NL", club:"Arsenal",        clubCode:"ARS", pos:"FWD", age:56, height:188, league:"Premier League",  leagueCode:"PL", fame:"LEGEND" },
+  { id:228, name:"Clarence Seedorf",         emoji:"🇳🇱", nat:"Netherlands",  natCode:"NL", club:"AC Milan",       clubCode:"MIL", pos:"MID", age:49, height:178, league:"Serie A",         leagueCode:"SA", fame:"LEGEND" },
+  { id:229, name:"Roberto Baggio",           emoji:"🇮🇹", nat:"Italy",        natCode:"IT", club:"Juventus",       clubCode:"JUV", pos:"FWD", age:58, height:174, league:"Serie A",         leagueCode:"SA", fame:"LEGEND" },
+  { id:230, name:"Cafu",                     emoji:"🇧🇷", nat:"Brazil",       natCode:"BR", club:"AC Milan",       clubCode:"MIL", pos:"DEF", age:55, height:176, league:"Serie A",         leagueCode:"SA", fame:"LEGEND" },
+  { id:231, name:"Patrick Kluivert",         emoji:"🇳🇱", nat:"Netherlands",  natCode:"NL", club:"Barcelona",      clubCode:"BAR", pos:"FWD", age:48, height:187, league:"La Liga",         leagueCode:"LL", fame:"LEGEND" },
+  { id:232, name:"Paul Scholes",             emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Man Utd",        clubCode:"MNU", pos:"MID", age:50, height:170, league:"Premier League",  leagueCode:"PL", fame:"LEGEND" },
+  { id:233, name:"Edgar Davids",             emoji:"🇳🇱", nat:"Netherlands",  natCode:"NL", club:"Juventus",       clubCode:"JUV", pos:"MID", age:52, height:170, league:"Serie A",         leagueCode:"SA", fame:"LEGEND" },
+  { id:234, name:"Ruud van Nistelrooy",      emoji:"🇳🇱", nat:"Netherlands",  natCode:"NL", club:"Man Utd",        clubCode:"MNU", pos:"FWD", age:49, height:188, league:"Premier League",  leagueCode:"PL", fame:"LEGEND" },
+];
+
+const PUZZLE_SCHEDULE = [114,64,50,2,9,189,177,23,36,221,51,17,186,134,25,151,16,135,116,206,152,41,40,60,97,44,67,176,4,216,81,42,187,171,26,117,83,58,18,205,177,54,119,21,63,102,141,140,12,225,109,100,106,13,70,46,62,66,131,210,24,72,159,8,73,144,139,98,20,213,164,88,124,121,61,207,181,133,180,217,55,96,94,111,121,150,153,173,115,203,59,52,11,53,82,105,92,14,78,230,85,107,132,143,110,149,71,120,125,226,19,139,34,112,128,91,169,126,47,204,90,158,123,35,127,101,108,113,162,201,151,175,28,27,154,191,22,168,179,220,167,65,49,33,147,181,104,158,202,219,15,84,189,154,174,5,68,30,118,208,156,3,155,164,89,45,38,123,99,202,56,153,79,157,74,32,154,170,136,224,155,39,190,193,135,187,1,87,194,227,172];
+
+const WC_PLAYERS = [
+  { id:300, name:"Manuel Neuer",          emoji:"🇩🇪", nat:"Germany",       natCode:"DE", club:"Bayern Munich",  clubCode:"BAY", pos:"GK",  age:38, height:193, league:"Bundesliga",      leagueCode:"BL", fame:"STAR" },
+  { id:301, name:"Jamal Musiala",         emoji:"🇩🇪", nat:"Germany",       natCode:"DE", club:"Bayern Munich",  clubCode:"BAY", pos:"MID", age:21, height:180, league:"Bundesliga",      leagueCode:"BL", fame:"STAR" },
+  { id:302, name:"Florian Wirtz",         emoji:"🇩🇪", nat:"Germany",       natCode:"DE", club:"Leverkusen",     clubCode:"LEV", pos:"MID", age:21, height:180, league:"Bundesliga",      leagueCode:"BL", fame:"STAR" },
+  { id:303, name:"Joshua Kimmich",        emoji:"🇩🇪", nat:"Germany",       natCode:"DE", club:"Bayern Munich",  clubCode:"BAY", pos:"MID", age:29, height:177, league:"Bundesliga",      leagueCode:"BL", fame:"STAR" },
+  { id:304, name:"Antonio Rudiger",       emoji:"🇩🇪", nat:"Germany",       natCode:"DE", club:"Real Madrid",    clubCode:"RMA", pos:"DEF", age:31, height:190, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:305, name:"Kai Havertz",           emoji:"🇩🇪", nat:"Germany",       natCode:"DE", club:"Arsenal",        clubCode:"ARS", pos:"FWD", age:25, height:189, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:306, name:"Leroy Sane",            emoji:"🇩🇪", nat:"Germany",       natCode:"DE", club:"Bayern Munich",  clubCode:"BAY", pos:"FWD", age:28, height:183, league:"Bundesliga",      leagueCode:"BL", fame:"STAR" },
+  { id:307, name:"Lamine Yamal",          emoji:"🇪🇸", nat:"Spain",         natCode:"ES", club:"Barcelona",      clubCode:"BAR", pos:"FWD", age:17, height:180, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:308, name:"Pedri",                 emoji:"🇪🇸", nat:"Spain",         natCode:"ES", club:"Barcelona",      clubCode:"BAR", pos:"MID", age:22, height:174, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:309, name:"Rodri",                 emoji:"🇪🇸", nat:"Spain",         natCode:"ES", club:"Man City",       clubCode:"MCI", pos:"MID", age:27, height:191, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:310, name:"Gavi",                  emoji:"🇪🇸", nat:"Spain",         natCode:"ES", club:"Barcelona",      clubCode:"BAR", pos:"MID", age:20, height:173, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:311, name:"Dani Carvajal",         emoji:"🇪🇸", nat:"Spain",         natCode:"ES", club:"Real Madrid",    clubCode:"RMA", pos:"DEF", age:32, height:173, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:312, name:"Alvaro Morata",         emoji:"🇪🇸", nat:"Spain",         natCode:"ES", club:"AC Milan",       clubCode:"MIL", pos:"FWD", age:31, height:187, league:"Serie A",         leagueCode:"SA", fame:"PRO"  },
+  { id:313, name:"Mikel Merino",          emoji:"🇪🇸", nat:"Spain",         natCode:"ES", club:"Arsenal",        clubCode:"ARS", pos:"MID", age:27, height:189, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:314, name:"Kylian Mbappe",         emoji:"🇫🇷", nat:"France",        natCode:"FR", club:"Real Madrid",    clubCode:"RMA", pos:"FWD", age:25, height:178, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:315, name:"Antoine Griezmann",     emoji:"🇫🇷", nat:"France",        natCode:"FR", club:"Atletico Madrid",clubCode:"ATM", pos:"FWD", age:33, height:176, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:316, name:"Aurelien Tchouameni",   emoji:"🇫🇷", nat:"France",        natCode:"FR", club:"Real Madrid",    clubCode:"RMA", pos:"MID", age:24, height:187, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:317, name:"N'Golo Kante",          emoji:"🇫🇷", nat:"France",        natCode:"FR", club:"Al-Ittihad",     clubCode:"ALI", pos:"MID", age:33, height:168, league:"Saudi Pro League", leagueCode:"SP", fame:"STAR" },
+  { id:318, name:"Ousmane Dembele",       emoji:"🇫🇷", nat:"France",        natCode:"FR", club:"PSG",            clubCode:"PSG", pos:"FWD", age:27, height:178, league:"Ligue 1",         leagueCode:"L1", fame:"STAR" },
+  { id:319, name:"William Saliba",        emoji:"🇫🇷", nat:"France",        natCode:"FR", club:"Arsenal",        clubCode:"ARS", pos:"DEF", age:23, height:192, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:320, name:"Marcus Thuram",         emoji:"🇫🇷", nat:"France",        natCode:"FR", club:"Inter Milan",    clubCode:"INT", pos:"FWD", age:26, height:187, league:"Serie A",         leagueCode:"SA", fame:"STAR" },
+  { id:321, name:"Mike Maignan",          emoji:"🇫🇷", nat:"France",        natCode:"FR", club:"AC Milan",       clubCode:"MIL", pos:"GK",  age:28, height:191, league:"Serie A",         leagueCode:"SA", fame:"STAR" },
+  { id:322, name:"Jude Bellingham",       emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Real Madrid",    clubCode:"RMA", pos:"MID", age:20, height:186, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:323, name:"Harry Kane",            emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Bayern Munich",  clubCode:"BAY", pos:"FWD", age:30, height:188, league:"Bundesliga",      leagueCode:"BL", fame:"STAR" },
+  { id:324, name:"Bukayo Saka",           emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Arsenal",        clubCode:"ARS", pos:"FWD", age:22, height:178, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:325, name:"Phil Foden",            emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Man City",       clubCode:"MCI", pos:"MID", age:24, height:171, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:326, name:"Declan Rice",           emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Arsenal",        clubCode:"ARS", pos:"MID", age:25, height:185, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:327, name:"Trent Alexander-Arnold",emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Liverpool",      clubCode:"LIV", pos:"MID", age:26, height:175, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:328, name:"Marcus Rashford",       emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Man Utd",        clubCode:"MNU", pos:"FWD", age:27, height:180, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:329, name:"Jordan Pickford",       emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", nat:"England",      natCode:"EN", club:"Everton",        clubCode:"EVE", pos:"GK",  age:30, height:185, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:330, name:"Cristiano Ronaldo",     emoji:"🇵🇹", nat:"Portugal",      natCode:"PT", club:"Al-Nassr",       clubCode:"ANS", pos:"FWD", age:39, height:187, league:"Saudi Pro League", leagueCode:"SP", fame:"STAR" },
+  { id:331, name:"Bernardo Silva",        emoji:"🇵🇹", nat:"Portugal",      natCode:"PT", club:"Man City",       clubCode:"MCI", pos:"MID", age:29, height:173, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:332, name:"Bruno Fernandes",       emoji:"🇵🇹", nat:"Portugal",      natCode:"PT", club:"Man Utd",        clubCode:"MNU", pos:"MID", age:29, height:179, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:333, name:"Rafael Leao",           emoji:"🇵🇹", nat:"Portugal",      natCode:"PT", club:"AC Milan",       clubCode:"MIL", pos:"FWD", age:24, height:188, league:"Serie A",         leagueCode:"SA", fame:"STAR" },
+  { id:334, name:"Diogo Jota",            emoji:"🇵🇹", nat:"Portugal",      natCode:"PT", club:"Liverpool",      clubCode:"LIV", pos:"FWD", age:27, height:178, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:335, name:"Ruben Dias",            emoji:"🇵🇹", nat:"Portugal",      natCode:"PT", club:"Man City",       clubCode:"MCI", pos:"DEF", age:26, height:187, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:336, name:"Virgil van Dijk",       emoji:"🇳🇱", nat:"Netherlands",   natCode:"NL", club:"Liverpool",      clubCode:"LIV", pos:"DEF", age:32, height:193, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:337, name:"Cody Gakpo",            emoji:"🇳🇱", nat:"Netherlands",   natCode:"NL", club:"Liverpool",      clubCode:"LIV", pos:"FWD", age:25, height:189, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:338, name:"Xavi Simons",           emoji:"🇳🇱", nat:"Netherlands",   natCode:"NL", club:"Leipzig",        clubCode:"RBL", pos:"MID", age:21, height:174, league:"Bundesliga",      leagueCode:"BL", fame:"STAR" },
+  { id:339, name:"Frenkie de Jong",       emoji:"🇳🇱", nat:"Netherlands",   natCode:"NL", club:"Barcelona",      clubCode:"BAR", pos:"MID", age:27, height:180, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:340, name:"Memphis Depay",         emoji:"🇳🇱", nat:"Netherlands",   natCode:"NL", club:"Atletico Madrid",clubCode:"ATM", pos:"FWD", age:30, height:176, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:341, name:"Kevin De Bruyne",       emoji:"🇧🇪", nat:"Belgium",       natCode:"BE", club:"Man City",       clubCode:"MCI", pos:"MID", age:33, height:181, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:342, name:"Romelu Lukaku",         emoji:"🇧🇪", nat:"Belgium",       natCode:"BE", club:"Napoli",         clubCode:"NAP", pos:"FWD", age:31, height:190, league:"Serie A",         leagueCode:"SA", fame:"STAR" },
+  { id:343, name:"Thibaut Courtois",      emoji:"🇧🇪", nat:"Belgium",       natCode:"BE", club:"Real Madrid",    clubCode:"RMA", pos:"GK",  age:31, height:199, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:344, name:"Lois Openda",           emoji:"🇧🇪", nat:"Belgium",       natCode:"BE", club:"Leipzig",        clubCode:"RBL", pos:"FWD", age:24, height:178, league:"Bundesliga",      leagueCode:"BL", fame:"PRO"  },
+  { id:345, name:"Gianluigi Donnarumma",  emoji:"🇮🇹", nat:"Italy",         natCode:"IT", club:"PSG",            clubCode:"PSG", pos:"GK",  age:25, height:196, league:"Ligue 1",         leagueCode:"L1", fame:"STAR" },
+  { id:346, name:"Nicolo Barella",        emoji:"🇮🇹", nat:"Italy",         natCode:"IT", club:"Inter Milan",    clubCode:"INT", pos:"MID", age:27, height:172, league:"Serie A",         leagueCode:"SA", fame:"STAR" },
+  { id:347, name:"Alessandro Bastoni",    emoji:"🇮🇹", nat:"Italy",         natCode:"IT", club:"Inter Milan",    clubCode:"INT", pos:"DEF", age:25, height:190, league:"Serie A",         leagueCode:"SA", fame:"STAR" },
+  { id:348, name:"Federico Chiesa",       emoji:"🇮🇹", nat:"Italy",         natCode:"IT", club:"Liverpool",      clubCode:"LIV", pos:"FWD", age:26, height:175, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:349, name:"Lorenzo Pellegrini",    emoji:"🇮🇹", nat:"Italy",         natCode:"IT", club:"Roma",           clubCode:"ROM", pos:"MID", age:27, height:185, league:"Serie A",         leagueCode:"SA", fame:"PRO"  },
+  { id:350, name:"Luca Modric",           emoji:"🇭🇷", nat:"Croatia",       natCode:"HR", club:"Real Madrid",    clubCode:"RMA", pos:"MID", age:38, height:172, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:351, name:"Mateo Kovacic",         emoji:"🇭🇷", nat:"Croatia",       natCode:"HR", club:"Man City",       clubCode:"MCI", pos:"MID", age:29, height:177, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:352, name:"Ivan Perisic",          emoji:"🇭🇷", nat:"Croatia",       natCode:"HR", club:"Hajduk Split",   clubCode:"HAJ", pos:"FWD", age:35, height:187, league:"HNL",             leagueCode:"HN", fame:"PRO"  },
+  { id:353, name:"Lionel Messi",          emoji:"🇦🇷", nat:"Argentina",     natCode:"AR", club:"Inter Miami",    clubCode:"IMI", pos:"FWD", age:37, height:170, league:"MLS",             leagueCode:"ML", fame:"STAR" },
+  { id:354, name:"Julian Alvarez",        emoji:"🇦🇷", nat:"Argentina",     natCode:"AR", club:"Atletico Madrid",clubCode:"ATM", pos:"FWD", age:24, height:170, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:355, name:"Emiliano Martinez",     emoji:"🇦🇷", nat:"Argentina",     natCode:"AR", club:"Aston Villa",    clubCode:"AVL", pos:"GK",  age:31, height:195, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:356, name:"Enzo Fernandez",        emoji:"🇦🇷", nat:"Argentina",     natCode:"AR", club:"Chelsea",        clubCode:"CHE", pos:"MID", age:23, height:178, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:357, name:"Rodrigo De Paul",       emoji:"🇦🇷", nat:"Argentina",     natCode:"AR", club:"Atletico Madrid",clubCode:"ATM", pos:"MID", age:30, height:180, league:"La Liga",         leagueCode:"LL", fame:"PRO"  },
+  { id:358, name:"Paulo Dybala",          emoji:"🇦🇷", nat:"Argentina",     natCode:"AR", club:"Roma",           clubCode:"ROM", pos:"FWD", age:30, height:177, league:"Serie A",         leagueCode:"SA", fame:"STAR" },
+  { id:359, name:"Vinicius Jr.",          emoji:"🇧🇷", nat:"Brazil",        natCode:"BR", club:"Real Madrid",    clubCode:"RMA", pos:"FWD", age:23, height:176, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:360, name:"Rodrygo",              emoji:"🇧🇷", nat:"Brazil",        natCode:"BR", club:"Real Madrid",    clubCode:"RMA", pos:"FWD", age:23, height:174, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:361, name:"Alisson Becker",        emoji:"🇧🇷", nat:"Brazil",        natCode:"BR", club:"Liverpool",      clubCode:"LIV", pos:"GK",  age:31, height:191, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:362, name:"Marquinhos",            emoji:"🇧🇷", nat:"Brazil",        natCode:"BR", club:"PSG",            clubCode:"PSG", pos:"DEF", age:30, height:183, league:"Ligue 1",         leagueCode:"L1", fame:"STAR" },
+  { id:363, name:"Bruno Guimaraes",       emoji:"🇧🇷", nat:"Brazil",        natCode:"BR", club:"Newcastle",      clubCode:"NEW", pos:"MID", age:26, height:182, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:364, name:"Gabriel Magalhaes",     emoji:"🇧🇷", nat:"Brazil",        natCode:"BR", club:"Arsenal",        clubCode:"ARS", pos:"DEF", age:26, height:190, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:365, name:"Endrick",              emoji:"🇧🇷", nat:"Brazil",        natCode:"BR", club:"Real Madrid",    clubCode:"RMA", pos:"FWD", age:18, height:173, league:"La Liga",         leagueCode:"LL", fame:"PRO"  },
+  { id:366, name:"Savinho",              emoji:"🇧🇷", nat:"Brazil",        natCode:"BR", club:"Man City",       clubCode:"MCI", pos:"FWD", age:20, height:175, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:367, name:"Darwin Nunez",          emoji:"🇺🇾", nat:"Uruguay",       natCode:"UY", club:"Liverpool",      clubCode:"LIV", pos:"FWD", age:25, height:187, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:368, name:"Federico Valverde",     emoji:"🇺🇾", nat:"Uruguay",       natCode:"UY", club:"Real Madrid",    clubCode:"RMA", pos:"MID", age:25, height:182, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:369, name:"Ronald Araujo",         emoji:"🇺🇾", nat:"Uruguay",       natCode:"UY", club:"Barcelona",      clubCode:"BAR", pos:"DEF", age:25, height:188, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:370, name:"Luis Diaz",             emoji:"🇨🇴", nat:"Colombia",      natCode:"CO", club:"Liverpool",      clubCode:"LIV", pos:"FWD", age:27, height:180, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:371, name:"James Rodriguez",       emoji:"🇨🇴", nat:"Colombia",      natCode:"CO", club:"Rayo Vallecano", clubCode:"RAY", pos:"MID", age:33, height:180, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:372, name:"Jhon Duran",            emoji:"🇨🇴", nat:"Colombia",      natCode:"CO", club:"Aston Villa",    clubCode:"AVL", pos:"FWD", age:20, height:187, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:373, name:"Moises Caicedo",        emoji:"🇪🇨", nat:"Ecuador",       natCode:"EC", club:"Chelsea",        clubCode:"CHE", pos:"MID", age:22, height:178, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:374, name:"Christian Pulisic",     emoji:"🇺🇸", nat:"USA",           natCode:"US", club:"AC Milan",       clubCode:"MIL", pos:"FWD", age:26, height:177, league:"Serie A",         leagueCode:"SA", fame:"STAR" },
+  { id:375, name:"Tyler Adams",           emoji:"🇺🇸", nat:"USA",           natCode:"US", club:"Bournemouth",    clubCode:"BOU", pos:"MID", age:25, height:177, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:376, name:"Weston McKennie",       emoji:"🇺🇸", nat:"USA",           natCode:"US", club:"Juventus",       clubCode:"JUV", pos:"MID", age:25, height:184, league:"Serie A",         leagueCode:"SA", fame:"PRO"  },
+  { id:377, name:"Gio Reyna",             emoji:"🇺🇸", nat:"USA",           natCode:"US", club:"Dortmund",       clubCode:"BVB", pos:"FWD", age:21, height:181, league:"Bundesliga",      leagueCode:"BL", fame:"PRO"  },
+  { id:378, name:"Ricardo Pepi",          emoji:"🇺🇸", nat:"USA",           natCode:"US", club:"PSV",            clubCode:"PSV", pos:"FWD", age:21, height:187, league:"Eredivisie",      leagueCode:"ED", fame:"PRO"  },
+  { id:379, name:"Alphonso Davies",       emoji:"🇨🇦", nat:"Canada",        natCode:"CA", club:"Bayern Munich",  clubCode:"BAY", pos:"DEF", age:23, height:183, league:"Bundesliga",      leagueCode:"BL", fame:"STAR" },
+  { id:380, name:"Jonathan David",        emoji:"🇨🇦", nat:"Canada",        natCode:"CA", club:"Lille",          clubCode:"LIL", pos:"FWD", age:24, height:180, league:"Ligue 1",         leagueCode:"L1", fame:"STAR" },
+  { id:381, name:"Tajon Buchanan",        emoji:"🇨🇦", nat:"Canada",        natCode:"CA", club:"Inter Milan",    clubCode:"INT", pos:"FWD", age:25, height:183, league:"Serie A",         leagueCode:"SA", fame:"PRO"  },
+  { id:382, name:"Cyle Larin",            emoji:"🇨🇦", nat:"Canada",        natCode:"CA", club:"Atletico Madrid",clubCode:"ATM", pos:"FWD", age:29, height:186, league:"La Liga",         leagueCode:"LL", fame:"PRO"  },
+  { id:383, name:"Hirving Lozano",        emoji:"🇲🇽", nat:"Mexico",        natCode:"MX", club:"PSV",            clubCode:"PSV", pos:"FWD", age:29, height:174, league:"Eredivisie",      leagueCode:"ED", fame:"PRO"  },
+  { id:384, name:"Santiago Gimenez",      emoji:"🇲🇽", nat:"Mexico",        natCode:"MX", club:"Feyenoord",      clubCode:"FEY", pos:"FWD", age:23, height:185, league:"Eredivisie",      leagueCode:"ED", fame:"PRO"  },
+  { id:385, name:"Edson Alvarez",         emoji:"🇲🇽", nat:"Mexico",        natCode:"MX", club:"West Ham",       clubCode:"WHU", pos:"MID", age:26, height:187, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:386, name:"Guillermo Ochoa",       emoji:"🇲🇽", nat:"Mexico",        natCode:"MX", club:"Salernitana",    clubCode:"SAL", pos:"GK",  age:38, height:183, league:"Serie A",         leagueCode:"SA", fame:"PRO"  },
+  { id:387, name:"Achraf Hakimi",         emoji:"🇲🇦", nat:"Morocco",       natCode:"MA", club:"PSG",            clubCode:"PSG", pos:"DEF", age:25, height:181, league:"Ligue 1",         leagueCode:"L1", fame:"STAR" },
+  { id:388, name:"Hakim Ziyech",          emoji:"🇲🇦", nat:"Morocco",       natCode:"MA", club:"Galatasaray",    clubCode:"GAL", pos:"FWD", age:31, height:181, league:"Super Lig",       leagueCode:"SK", fame:"PRO"  },
+  { id:389, name:"Youssef En-Nesyri",     emoji:"🇲🇦", nat:"Morocco",       natCode:"MA", club:"Fenerbahce",     clubCode:"FEN", pos:"FWD", age:27, height:192, league:"Super Lig",       leagueCode:"SK", fame:"PRO"  },
+  { id:390, name:"Sofyan Amrabat",        emoji:"🇲🇦", nat:"Morocco",       natCode:"MA", club:"Fenerbahce",     clubCode:"FEN", pos:"MID", age:27, height:182, league:"Super Lig",       leagueCode:"SK", fame:"PRO"  },
+  { id:391, name:"Sadio Mane",            emoji:"🇸🇳", nat:"Senegal",       natCode:"SN", club:"Al-Nassr",       clubCode:"ANS", pos:"FWD", age:32, height:175, league:"Saudi Pro League", leagueCode:"SP", fame:"STAR" },
+  { id:392, name:"Nicolas Jackson",       emoji:"🇸🇳", nat:"Senegal",       natCode:"SN", club:"Chelsea",        clubCode:"CHE", pos:"FWD", age:23, height:185, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:393, name:"Edouard Mendy",         emoji:"🇸🇳", nat:"Senegal",       natCode:"SN", club:"Al-Ahli",        clubCode:"ALAh",pos:"GK",  age:32, height:197, league:"Saudi Pro League", leagueCode:"SP", fame:"PRO"  },
+  { id:394, name:"Ismaila Sarr",          emoji:"🇸🇳", nat:"Senegal",       natCode:"SN", club:"Crystal Palace", clubCode:"CRY", pos:"FWD", age:26, height:182, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:395, name:"Victor Osimhen",        emoji:"🇳🇬", nat:"Nigeria",       natCode:"NG", club:"Galatasaray",    clubCode:"GAL", pos:"FWD", age:25, height:185, league:"Super Lig",       leagueCode:"SK", fame:"STAR" },
+  { id:396, name:"Ademola Lookman",       emoji:"🇳🇬", nat:"Nigeria",       natCode:"NG", club:"Atalanta",       clubCode:"ATA", pos:"FWD", age:26, height:174, league:"Serie A",         leagueCode:"SA", fame:"STAR" },
+  { id:397, name:"Alex Iwobi",            emoji:"🇳🇬", nat:"Nigeria",       natCode:"NG", club:"Fulham",         clubCode:"FUL", pos:"MID", age:28, height:181, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:398, name:"Mohamed Salah",         emoji:"🇪🇬", nat:"Egypt",         natCode:"EG", club:"Liverpool",      clubCode:"LIV", pos:"FWD", age:32, height:175, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:399, name:"Omar Marmoush",         emoji:"🇪🇬", nat:"Egypt",         natCode:"EG", club:"Man City",       clubCode:"MCI", pos:"FWD", age:25, height:180, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:400, name:"Sebastien Haller",      emoji:"🇨🇮", nat:"Ivory Coast",   natCode:"CI", club:"Dortmund",       clubCode:"BVB", pos:"FWD", age:30, height:190, league:"Bundesliga",      leagueCode:"BL", fame:"PRO"  },
+  { id:401, name:"Simon Adingra",         emoji:"🇨🇮", nat:"Ivory Coast",   natCode:"CI", club:"Brighton",       clubCode:"BHA", pos:"FWD", age:22, height:177, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:402, name:"Percy Tau",             emoji:"🇿🇦", nat:"South Africa",  natCode:"ZA", club:"Al-Ahli",        clubCode:"ALAh",pos:"FWD", age:30, height:174, league:"Saudi Pro League", leagueCode:"SP", fame:"PRO"  },
+  { id:403, name:"Andre Onana",           emoji:"🇨🇲", nat:"Cameroon",      natCode:"CM", club:"Man Utd",        clubCode:"MNU", pos:"GK",  age:28, height:190, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:404, name:"Bryan Mbeumo",          emoji:"🇨🇲", nat:"Cameroon",      natCode:"CM", club:"Brentford",      clubCode:"BRE", pos:"FWD", age:24, height:174, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:405, name:"Takefusa Kubo",         emoji:"🇯🇵", nat:"Japan",         natCode:"JP", club:"Real Sociedad",  clubCode:"SOC", pos:"FWD", age:22, height:173, league:"La Liga",         leagueCode:"LL", fame:"PRO"  },
+  { id:406, name:"Kaoru Mitoma",          emoji:"🇯🇵", nat:"Japan",         natCode:"JP", club:"Brighton",       clubCode:"BHA", pos:"FWD", age:26, height:178, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:407, name:"Ritsu Doan",            emoji:"🇯🇵", nat:"Japan",         natCode:"JP", club:"Freiburg",       clubCode:"FRE", pos:"FWD", age:26, height:172, league:"Bundesliga",      leagueCode:"BL", fame:"PRO"  },
+  { id:408, name:"Wataru Endo",           emoji:"🇯🇵", nat:"Japan",         natCode:"JP", club:"Liverpool",      clubCode:"LIV", pos:"MID", age:31, height:178, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:409, name:"Son Heung-min",         emoji:"🇰🇷", nat:"South Korea",   natCode:"KR", club:"Tottenham",      clubCode:"TOT", pos:"FWD", age:31, height:183, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:410, name:"Lee Kang-in",           emoji:"🇰🇷", nat:"South Korea",   natCode:"KR", club:"PSG",            clubCode:"PSG", pos:"MID", age:23, height:173, league:"Ligue 1",         leagueCode:"L1", fame:"PRO"  },
+  { id:411, name:"Kim Min-jae",           emoji:"🇰🇷", nat:"South Korea",   natCode:"KR", club:"Bayern Munich",  clubCode:"BAY", pos:"DEF", age:27, height:190, league:"Bundesliga",      leagueCode:"BL", fame:"STAR" },
+  { id:412, name:"Salem Al-Dawsari",      emoji:"🇸🇦", nat:"Saudi Arabia",  natCode:"SA", club:"Al-Hilal",       clubCode:"ALH", pos:"FWD", age:32, height:167, league:"Saudi Pro League", leagueCode:"SP", fame:"PRO"  },
+  { id:413, name:"Mehdi Taremi",          emoji:"🇮🇷", nat:"Iran",          natCode:"IR", club:"Inter Milan",    clubCode:"INT", pos:"FWD", age:31, height:187, league:"Serie A",         leagueCode:"SA", fame:"PRO"  },
+  { id:414, name:"Mat Ryan",              emoji:"🇦🇺", nat:"Australia",     natCode:"AU", club:"Roma",           clubCode:"ROM", pos:"GK",  age:32, height:184, league:"Serie A",         leagueCode:"SA", fame:"PRO"  },
+  { id:415, name:"Granit Xhaka",          emoji:"🇨🇭", nat:"Switzerland",   natCode:"CH", club:"Leverkusen",     clubCode:"LEV", pos:"MID", age:31, height:183, league:"Bundesliga",      leagueCode:"BL", fame:"STAR" },
+  { id:416, name:"Yann Sommer",           emoji:"🇨🇭", nat:"Switzerland",   natCode:"CH", club:"Inter Milan",    clubCode:"INT", pos:"GK",  age:35, height:183, league:"Serie A",         leagueCode:"SA", fame:"PRO"  },
+  { id:417, name:"Robert Lewandowski",    emoji:"🇵🇱", nat:"Poland",        natCode:"PL", club:"Barcelona",      clubCode:"BAR", pos:"FWD", age:35, height:184, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:418, name:"Piotr Zielinski",       emoji:"🇵🇱", nat:"Poland",        natCode:"PL", club:"Inter Milan",    clubCode:"INT", pos:"MID", age:30, height:181, league:"Serie A",         leagueCode:"SA", fame:"PRO"  },
+  { id:419, name:"Christian Eriksen",     emoji:"🇩🇰", nat:"Denmark",       natCode:"DK", club:"Man Utd",        clubCode:"MNU", pos:"MID", age:32, height:182, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:420, name:"Rasmus Hojlund",        emoji:"🇩🇰", nat:"Denmark",       natCode:"DK", club:"Man Utd",        clubCode:"MNU", pos:"FWD", age:21, height:191, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:421, name:"David Alaba",           emoji:"🇦🇹", nat:"Austria",       natCode:"AT", club:"Real Madrid",    clubCode:"RMA", pos:"DEF", age:32, height:180, league:"La Liga",         leagueCode:"LL", fame:"STAR" },
+  { id:422, name:"Dusan Vlahovic",        emoji:"🇷🇸", nat:"Serbia",        natCode:"RS", club:"Juventus",       clubCode:"JUV", pos:"FWD", age:24, height:190, league:"Serie A",         leagueCode:"SA", fame:"STAR" },
+  { id:423, name:"Aleksandar Mitrovic",   emoji:"🇷🇸", nat:"Serbia",        natCode:"RS", club:"Al-Hilal",       clubCode:"ALH", pos:"FWD", age:29, height:190, league:"Saudi Pro League", leagueCode:"SP", fame:"PRO"  },
+  { id:424, name:"Patrik Schick",         emoji:"🇨🇿", nat:"Czech Republic",natCode:"CZ", club:"Leverkusen",     clubCode:"LEV", pos:"FWD", age:28, height:191, league:"Bundesliga",      leagueCode:"BL", fame:"PRO"  },
+  { id:425, name:"Dominik Szoboszlai",    emoji:"🇭🇺", nat:"Hungary",       natCode:"HU", club:"Liverpool",      clubCode:"LIV", pos:"MID", age:23, height:186, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:426, name:"Hakan Calhanoglu",      emoji:"🇹🇷", nat:"Turkey",        natCode:"TR", club:"Inter Milan",    clubCode:"INT", pos:"MID", age:29, height:179, league:"Serie A",         leagueCode:"SA", fame:"STAR" },
+  { id:427, name:"Arda Guler",            emoji:"🇹🇷", nat:"Turkey",        natCode:"TR", club:"Real Madrid",    clubCode:"RMA", pos:"MID", age:19, height:176, league:"La Liga",         leagueCode:"LL", fame:"PRO"  },
+  { id:428, name:"Artem Dovbyk",          emoji:"🇺🇦", nat:"Ukraine",       natCode:"UA", club:"Roma",           clubCode:"ROM", pos:"FWD", age:27, height:190, league:"Serie A",         leagueCode:"SA", fame:"PRO"  },
+  { id:429, name:"Mykhailo Mudryk",       emoji:"🇺🇦", nat:"Ukraine",       natCode:"UA", club:"Chelsea",        clubCode:"CHE", pos:"FWD", age:23, height:175, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:430, name:"Scott McTominay",       emoji:"🏴󠁧󠁢󠁳󠁣󠁴󠁿", nat:"Scotland",     natCode:"SC", club:"Napoli",         clubCode:"NAP", pos:"MID", age:27, height:190, league:"Serie A",         leagueCode:"SA", fame:"PRO"  },
+  { id:431, name:"Andrew Robertson",      emoji:"🏴󠁧󠁢󠁳󠁣󠁴󠁿", nat:"Scotland",     natCode:"SC", club:"Liverpool",      clubCode:"LIV", pos:"DEF", age:30, height:178, league:"Premier League",  leagueCode:"PL", fame:"STAR" },
+  { id:432, name:"Leon Bailey",           emoji:"🇯🇲", nat:"Jamaica",       natCode:"JM", club:"Aston Villa",    clubCode:"AVL", pos:"FWD", age:26, height:175, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:433, name:"Alexis Sanchez",        emoji:"🇨🇱", nat:"Chile",         natCode:"CL", club:"Inter Milan",    clubCode:"INT", pos:"FWD", age:35, height:169, league:"Serie A",         leagueCode:"SA", fame:"STAR" },
+  { id:434, name:"Miguel Almiron",        emoji:"🇵🇾", nat:"Paraguay",      natCode:"PY", club:"Newcastle",      clubCode:"NEW", pos:"MID", age:30, height:174, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+  { id:435, name:"Keylor Navas",          emoji:"🇨🇷", nat:"Costa Rica",    natCode:"CR", club:"Free Agent",     clubCode:"FA",  pos:"GK",  age:37, height:185, league:"Free Agent",      leagueCode:"FA", fame:"STAR" },
+  { id:436, name:"Raul Jimenez",          emoji:"🇲🇽", nat:"Mexico",        natCode:"MX", club:"Fulham",         clubCode:"FUL", pos:"FWD", age:33, height:187, league:"Premier League",  leagueCode:"PL", fame:"PRO"  },
+];
+
+// WC puzzle schedule (seeded differently from standard)
+const WC_SCHEDULE = [353,309,398,322,314,379,374,359,341,409,395,330,387,336,354,307,391,367,370,421,302,343,315,338,355,380,324,316,301,411,396,308,315,356,303,373,358,323,388,368,361,342,319,392,304,346,317,371,325,415,301,362,347,303,321,358,337,320,326,397,431,417,350,340,345,363,329,399,313,401,306,327,370,419,351,318,312,334,300,433,328,364,405,310,311,374,348,383,366,406,331,360,344,335,357,408,390,413,425,416,332,393,365,385,402,333,349,395,426,352,369,382,407,336,356,422,311,431,378,404,316,371,388,430,414,327,318,341,376,432,303,354,389,319,367,423,387,374,409,420];
+
+
+// =============================================================
+//  PUZZLE ENGINE
+// =============================================================
+
+function getPuzzleIndex(scheduleLen) {
+  const epoch  = new Date('2024-01-01T00:00:00Z');
+  const now    = new Date();
+  const utcNow = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return Math.floor((utcNow - epoch) / 86400000) % scheduleLen;
+}
+
+const STD_IDX    = getPuzzleIndex(PUZZLE_SCHEDULE.length);
+const PUZZLE_NUM = STD_IDX + 1;
+const STD_MYSTERY = PLAYERS.find(p => p.id === PUZZLE_SCHEDULE[STD_IDX]);
+
+const WC_IDX     = getPuzzleIndex(WC_SCHEDULE.length);
+const WC_MYSTERY = WC_PLAYERS.find(p => p.id === WC_SCHEDULE[WC_IDX]);
+
+// =============================================================
+//  PERSISTENCE
+// =============================================================
+
+const MAX_GUESSES = 8;
+
+function makeDefaultState()  { return { guesses: [], completed: false, won: false }; }
+function makeDefaultStats()  {
+  return { played:0, won:0, streak:0, longestStreak:0, lastPlayedPuzzle:null,
+           guessDistribution:{1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0}, history:[] };
+}
+
+function loadLS(key, defaults) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? { ...defaults, ...JSON.parse(raw) } : { ...defaults };
+  } catch { return { ...defaults }; }
+}
+function saveLS(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
+const STD_STATE_KEY  = 'fg-std-state-' + PUZZLE_NUM;
+const STD_STATS_KEY  = 'fg-std-stats';
+const WC_STATE_KEY   = 'fg-wc-state-' + PUZZLE_NUM;
+const WC_STATS_KEY   = 'fg-wc-stats';
+const MODE_KEY       = 'fg-mode';
+
+let stdState  = loadLS(STD_STATE_KEY,  makeDefaultState());
+let stdStats  = loadLS(STD_STATS_KEY,  makeDefaultStats());
+let wcState   = loadLS(WC_STATE_KEY,   makeDefaultState());
+let wcStats   = loadLS(WC_STATS_KEY,   makeDefaultStats());
+
+// Repair streak if puzzle skipped
+[{stats:stdStats, key:STD_STATS_KEY}, {stats:wcStats, key:WC_STATS_KEY}].forEach(({stats, key}) => {
+  if (stats.lastPlayedPuzzle && stats.lastPlayedPuzzle < PUZZLE_NUM - 1) {
+    stats.streak = 0; saveLS(key, stats);
+  }
+});
+
+// =============================================================
+//  MODE
+// =============================================================
+
+let activeMode   = localStorage.getItem(MODE_KEY) || 'standard';
+const currentDiff = 'normal';
+let selectedPlayer = null;
+let acResults    = [];
+let acHighlight  = -1;
+
+function isWC()          { return activeMode === 'wc'; }
+function M()             { return isWC() ? WC_MYSTERY   : STD_MYSTERY; }
+function pool()          { return isWC() ? WC_PLAYERS   : PLAYERS; }
+function cState()        { return isWC() ? wcState      : stdState; }
+function cStats()        { return isWC() ? wcStats      : stdStats; }
+function saveState()     { saveLS(isWC() ? WC_STATE_KEY : STD_STATE_KEY, cState()); }
+function saveStats()     { saveLS(isWC() ? WC_STATS_KEY : STD_STATS_KEY, cStats()); }
+
+function setMode(mode) {
+  if (activeMode === mode) return;
+  activeMode = mode;
+  saveLS(MODE_KEY, mode);
+  applyModeTheme();
+  resetInput();
+  render();
+  if (cState().completed) setTimeout(showResult, 400);
+}
+
+function applyModeTheme() {
+  const wc = isWC();
+  document.body.classList.toggle('wc-mode', wc);
+  document.getElementById('btn-standard').classList.toggle('active', !wc);
+  document.getElementById('btn-wc').classList.toggle('active', wc);
+  document.getElementById('search-input').placeholder = wc ? 'Type an international player...' : 'Type a player name...';
+  const _lt = document.getElementById('logo-tag'); if (_lt) _lt.textContent = wc ? 'World Cup 2026' : 'Daily puzzle';
+}
+
+// =============================================================
+//  CLUE LOGIC
+// =============================================================
+
+const POS_ORDER  = ['GK','DEF','MID','FWD'];
+const FAME_RANK  = { SEMI:0, PRO:1, STAR:2, LEGEND:2 };
+const FAME_LABEL = { STAR:'STAR', PRO:'PRO', SEMI:'SEMI', LEGEND:'STAR' };
+
+function getClues(guess) {
+  const mystery = M();
+  return [
+    // nationality
+    guess.natCode === mystery.natCode
+      ? { display: guess.emoji, state: 'correct' }
+      : { display: guess.emoji, state: 'wrong' },
+    // club
+    guess.clubCode === mystery.clubCode
+      ? { display: guess.clubCode, state: 'correct' }
+      : { display: guess.clubCode, state: 'wrong' },
+    // position
+    (() => {
+      if (guess.pos === mystery.pos) return { display: guess.pos, state: 'correct' };
+      const d = Math.abs(POS_ORDER.indexOf(guess.pos) - POS_ORDER.indexOf(mystery.pos));
+      return { display: guess.pos, state: d === 1 ? 'higher' : 'wrong' };
+    })(),
+    // age
+    (() => {
+      const d = guess.age - mystery.age;
+      if (d === 0) return { display: guess.age, state: 'correct' };
+      return { display: guess.age, state: d > 0 ? 'higher' : 'lower', arrow: d > 0 ? '\u2193' : '\u2191' };
+    })(),
+    // height
+    (() => {
+      const d = guess.height - mystery.height;
+      if (d === 0) return { display: guess.height, state: 'correct' };
+      return { display: guess.height, state: d > 0 ? 'higher' : 'lower', arrow: d > 0 ? '\u2193' : '\u2191' };
+    })(),
+    // league
+    guess.leagueCode === mystery.leagueCode
+      ? { display: guess.leagueCode, state: 'correct' }
+      : { display: guess.leagueCode, state: 'wrong' },
+    // fame
+    (() => {
+      const gf = FAME_RANK[guess.fame]  || 0;
+      const mf = FAME_RANK[mystery.fame] || 0;
+      const label = FAME_LABEL[guess.fame] || guess.fame;
+      if (gf === mf) return { display: label, state: 'correct' };
+      return { display: label, state: gf > mf ? 'higher' : 'lower', arrow: gf > mf ? '\u2193' : '\u2191' };
+    })(),
+  ];
+}
+
+// =============================================================
+//  RENDER
+// =============================================================
+
+function render() {
+  const cs = cState();
+  const s  = cStats();
+
+  // header
+  const puzzleLabel = isWC()
+    ? 'WC #' + (WC_IDX + 1) + ' \u00b7 World Cup 2026'
+    : '#' + PUZZLE_NUM + ' \u00b7 Daily puzzle';
+  document.getElementById('puzzle-num').textContent = puzzleLabel;
+
+  const prevStreak = parseInt(document.getElementById('streak-val').textContent) || 0;
+  document.getElementById('streak-val').textContent = s.streak;
+  if (s.streak > prevStreak && prevStreak > 0) {
+    const pill = document.getElementById('streak-pill');
+    pill.classList.remove('bump');
+    void pill.offsetWidth;
+    pill.classList.add('bump');
+    setTimeout(() => pill.classList.remove('bump'), 500);
+  }
+
+  const remaining = MAX_GUESSES - cs.guesses.length;
+  document.querySelector('.guess-counter') && (document.querySelector('.guess-counter').innerHTML = '<span>' + remaining + '</span> left');
+
+  // board
+  const area = document.getElementById('guesses-area');
+  area.innerHTML = '';
+
+  if (cs.guesses.length === 0) {
+    const lbl = document.createElement('p');
+    lbl.className = 'empty-label';
+    lbl.textContent = isWC() ? 'Guess a World Cup star...' : 'Make your first guess below';
+    area.appendChild(lbl);
+  }
+
+  const currentPool = pool();
+  cs.guesses.forEach((gId, rowIdx) => {
+    const g = currentPool.find(p => p.id === gId);
+    if (!g) return;
+    const clues = getClues(g);
+    const row = document.createElement('div');
+    row.className = 'guess-row';
+
+    const nameCell = document.createElement('div');
+    nameCell.className = 'player-name-cell';
+    nameCell.textContent = g.name;
+    row.appendChild(nameCell);
+
+    clues.forEach((c, tIdx) => {
+      const tile  = document.createElement('div');
+      tile.className = 'clue-tile';
+      const inner = document.createElement('div');
+      inner.className = 'tile-inner';
+      const front = document.createElement('div');
+      front.className = 'tile-front';
+      const back  = document.createElement('div');
+      back.className = 'tile-back ' + c.state;
+
+      const val = document.createElement('div');
+      val.className = 'tile-val';
+      val.textContent = c.display;
+      back.appendChild(val);
+
+      if (c.arrow) {
+        const arr = document.createElement('div');
+        arr.className = 'tile-arrow';
+        arr.textContent = c.arrow;
+        back.appendChild(arr);
+      }
+
+      inner.appendChild(front);
+      inner.appendChild(back);
+      tile.appendChild(inner);
+      row.appendChild(tile);
+
+      setTimeout(() => inner.classList.add('flipped'), tIdx * 140 + rowIdx * 10 + 60);
+    });
+
+    area.appendChild(row);
+  });
+
+  // empty rows
+  if (!cs.completed) {
+    for (let i = 0; i < remaining; i++) {
+      const row = document.createElement('div');
+      row.className = 'guess-row empty';
+      const nc = document.createElement('div');
+      nc.className = 'player-name-cell';
+      nc.textContent = i === 0 ? (isWC() ? 'Your WC guess...' : 'Your guess...') : '';
+      row.appendChild(nc);
+      for (let j = 0; j < 7; j++) {
+        const t = document.createElement('div');
+        t.className = 'empty-tile';
+        row.appendChild(t);
+      }
+      area.appendChild(row);
+    }
+  }
+
+  // lock/unlock input
+  const inp  = document.getElementById('search-input');
+  const sbtn = document.getElementById('submit-btn');
+  if (cs.completed) {
+    inp.disabled  = true;
+    sbtn.disabled = true;
+  } else {
+    inp.disabled  = false;
+    sbtn.disabled = !selectedPlayer;
+  }
+}
+
+// =============================================================
+//  AUTOCOMPLETE
+// =============================================================
+
+const searchInput = document.getElementById('search-input');
+const acEl        = document.getElementById('autocomplete');
+const submitBtn   = document.getElementById('submit-btn');
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  selectedPlayer = null;
+  submitBtn.disabled = true;
+  acHighlight = -1;
+
+  if (q.length < 2) { acEl.style.display = 'none'; return; }
+
+  const usedIds = cState().guesses;
+  let p = pool(); // include ALL players including legends — they may be today's answer
+
+  acResults = p.filter(p => p.name.toLowerCase().includes(q) && !usedIds.includes(p.id)).slice(0, 6);
+
+  if (!acResults.length) { acEl.style.display = 'none'; return; }
+
+  acEl.innerHTML = acResults.map((p, i) => `
+    <div class="ac-item" data-idx="${i}" onmousedown="selectFromAC(${i})">
+      <div class="ac-emoji">${p.emoji}</div>
+      <div>
+        <div class="ac-name">${hl(p.name, q)}</div>
+        <div class="ac-sub">${p.club} \u00b7 ${p.pos} \u00b7 ${p.nat}</div>
+      </div>
+      <span class="ac-fame ${p.fame}">${p.fame === 'STAR' ? 'STAR' : p.fame === 'LEGEND' ? '\u2605 Legend' : 'PRO'}</span>
+    </div>`).join('');
+  acEl.style.display = 'block';
+});
+
+function hl(name, q) {
+  const i = name.toLowerCase().indexOf(q);
+  if (i === -1) return name;
+  return name.slice(0, i) + '<strong style="color:var(--text)">' + name.slice(i, i + q.length) + '</strong>' + name.slice(i + q.length);
+}
+
+function selectFromAC(idx) {
+  selectedPlayer = acResults[idx];
+  searchInput.value = selectedPlayer.name;
+  acEl.style.display = 'none';
+  submitBtn.disabled = false;
+  acHighlight = -1;
+}
+
+searchInput.addEventListener('keydown', e => {
+  if (acEl.style.display !== 'none' && acResults.length) {
+    if (e.key === 'ArrowDown')  { e.preventDefault(); acHighlight = Math.min(acHighlight + 1, acResults.length - 1); updateAcHL(); return; }
+    if (e.key === 'ArrowUp')    { e.preventDefault(); acHighlight = Math.max(acHighlight - 1, -1); updateAcHL(); return; }
+    if (e.key === 'Enter' && acHighlight >= 0) { e.preventDefault(); selectFromAC(acHighlight); return; }
+  }
+  if (e.key === 'Enter' && selectedPlayer) submitGuess();
+  if (e.key === 'Escape') acEl.style.display = 'none';
+});
+
+function updateAcHL() {
+  acEl.querySelectorAll('.ac-item').forEach((el, i) => el.classList.toggle('highlighted', i === acHighlight));
+  if (acHighlight >= 0) { selectedPlayer = acResults[acHighlight]; searchInput.value = selectedPlayer.name; submitBtn.disabled = false; }
+}
+
+document.addEventListener('click', e => { if (!e.target.closest('.search-inner')) acEl.style.display = 'none'; });
+
+function resetInput() {
+  selectedPlayer = null;
+  searchInput.value = '';
+  submitBtn.disabled = true;
+  acEl.style.display = 'none';
+}
+
+// =============================================================
+//  SUBMIT
+// =============================================================
+
+function submitGuess() {
+  if (!selectedPlayer || cState().completed) return;
+  const cs = cState();
+  if (cs.guesses.includes(selectedPlayer.id)) { showToast('Already guessed!'); return; }
+
+  cs.guesses.push(selectedPlayer.id);
+  const won  = selectedPlayer.id === M().id;
+  const lost = !won && cs.guesses.length >= MAX_GUESSES;
+
+  if (won || lost) {
+    cs.completed = true;
+    cs.won = won;
+    updateStats(won, cs.guesses.length);
+  }
+
+  saveState();
+  resetInput();
+  render();
+
+  if (cs.completed) {
+    setTimeout(() => { if (won) launchConfetti(); showResult(); }, 7 * 140 + 400);
+  }
+}
+
+function updateStats(won, numGuesses) {
+  const s = cStats();
+  s.played++;
+  if (won) {
+    s.won++;
+    s.guessDistribution[numGuesses] = (s.guessDistribution[numGuesses] || 0) + 1;
+  }
+  const prev = s.streak;
+  if (won) {
+    s.streak = (s.lastPlayedPuzzle === PUZZLE_NUM - 1) ? s.streak + 1 : 1;
+  } else {
+    s.streak = 0;
+  }
+  s.longestStreak      = Math.max(s.longestStreak, s.streak);
+  s.lastPlayedPuzzle   = PUZZLE_NUM;
+  if (!s.history) s.history = [];
+  s.history.push({ puzzle: PUZZLE_NUM, won, guesses: numGuesses });
+  if (s.history.length > 14) s.history = s.history.slice(-14);
+  saveStats();
+
+  if (won && prev !== s.streak) {
+    const milestones = {
+      3:  ['\uD83D\uDD25', '3-day streak!',   'You are on fire'],
+      7:  ['\u26A1',       'One week!',        '7 days straight'],
+      14: ['\uD83D\uDC8E', 'Two weeks!',       '14-day streak'],
+      30: ['\uD83D\uDC51', '30 days!',         'A whole month'],
+      50: ['\uD83C\uDFC6', '50 days!',         'Absolutely relentless'],
+      100:['\uD83D\uDC10', '100 days!',        'You are a legend'],
+    };
+    if (milestones[s.streak]) showMilestone(...milestones[s.streak]);
+  }
+}
+
+// =============================================================
+//  SHARE
+// =============================================================
+
+function buildShareText() {
+  const cs = cState();
+  const p  = pool();
+  const lines = cs.guesses.map(gId => {
+    const g = p.find(x => x.id === gId);
+    if (!g) return '';
+    const clues = getClues(g);
+    return clues.map(c => {
+      if (c.state === 'correct') return isWC() ? '\uD83D\uDFE8' : '\uD83D\uDFE9';
+      if (c.state === 'higher' || c.state === 'lower') return isWC() ? '\uD83D\uDFE5' : '\uD83D\uDFE8';
+      return '\u2B1B';
+    }).join('');
+  });
+  const result = cs.won ? cs.guesses.length + '/8' : 'X/8';
+  const tag = isWC() ? 'WC #' + (WC_IDX + 1) : '#' + PUZZLE_NUM;
+  return '\u26BD FootyGuess ' + tag + ' \u2014 ' + result + '\n\n' + lines.join('\n') + '\n\nfootyguess.com';
+}
+
+// =============================================================
+//  RESULT SHEET
+// =============================================================
+
+function showResult() {
+  const cs     = cState();
+  const s      = cStats();
+  const won    = cs.won;
+  const g      = cs.guesses.length;
+  const winPct = s.played > 0 ? Math.round(s.won / s.played * 100) : 0;
+  const mystery = M();
+  const sheet  = document.getElementById('result-sheet');
+  const accentCol = isWC() ? 'var(--wc-gold)' : 'var(--amber)';
+
+  let streakHtml = '';
+  if (won && s.streak >= 2) {
+    const bg  = isWC() ? 'rgba(245,197,24,0.1)' : 'var(--amber-dim)';
+    const br  = isWC() ? 'rgba(245,197,24,0.25)' : 'rgba(245,158,11,0.25)';
+    streakHtml = '<div style="text-align:center;font-size:13px;color:' + accentCol + ';font-weight:700;margin-bottom:14px;padding:8px 14px;background:' + bg + ';border-radius:8px;border:0.5px solid ' + br + '">' + (isWC() ? 'WC ' : '') + 'Streak: ' + s.streak + ' days \uD83D\uDD25</div>';
+  } else if (!won && s.longestStreak > 0) {
+    streakHtml = '<div style="text-align:center;font-size:13px;color:var(--text3);font-weight:600;margin-bottom:14px;padding:8px 14px;background:var(--bg3);border-radius:8px;border:0.5px solid var(--border)">Streak ended. Best: ' + s.longestStreak + ' days</div>';
+  }
+
+  const modeTag = isWC() ? ' <span style="font-size:10px;background:rgba(245,197,24,0.15);color:var(--wc-gold);padding:2px 7px;border-radius:4px;font-weight:700">WC 2026</span>' : '';
+
+  sheet.innerHTML =
+    '<div class="result-badge ' + (won ? 'win' : 'lose') + '">' + (won ? '\u26A1 Solved!' : '\uD83D\uDC80 Hard luck') + modeTag + '</div>'
+  + '<div class="result-player">'
+  +   '<div class="result-flag">' + mystery.emoji + '</div>'
+  +   '<div><div class="result-name">' + mystery.name + '</div>'
+  +   '<div class="result-detail">' + mystery.club + ' \u00b7 ' + mystery.pos + ' \u00b7 ' + mystery.nat + ' \u00b7 ' + mystery.height + 'cm</div></div>'
+  + '</div>'
+  + streakHtml
+  + '<div class="result-stats">'
+  +   '<div class="r-stat"><div class="r-val">' + (won ? g : '\u2014') + '</div><div class="r-lbl">Guesses</div></div>'
+  +   '<div class="r-stat"><div class="r-val" style="color:' + accentCol + '">' + s.streak + (s.streak > 0 ? ' \uD83D\uDD25' : '') + '</div><div class="r-lbl">Streak</div></div>'
+  +   '<div class="r-stat"><div class="r-val">' + winPct + '%</div><div class="r-lbl">Win rate</div></div>'
+  + '</div>'
+  + '<div class="share-preview">' + buildShareText() + '</div>'
+  + '<button class="btn-primary" onclick="doShare()">\uD83D\uDCE4 Challenge Friends</button>'
+  + '<div style="display:flex;gap:8px">'
+  +   '<button class="btn-secondary" style="flex:1" onclick="closeResult()">Back</button>'
+  +   '<button class="btn-secondary" style="flex:1" onclick="closeResult();openStats()">\uD83D\uDCCA My stats</button>'
+  + '</div>'
+  + '<div class="countdown-row">Next puzzle in <span class="countdown-time" id="countdown">\u2014</span></div>';
+
+  document.getElementById('result-overlay').classList.add('open');
+  startCountdown();
+}
+
+function doShare() {
+  const text = buildShareText();
+  if (navigator.share) navigator.share({ text }).catch(() => copyText(text));
+  else copyText(text);
+}
+function copyText(text) {
+  navigator.clipboard.writeText(text)
+    .then(() => showToast('Copied to clipboard!'))
+    .catch(() => showToast('Copy the text above'));
+}
+function closeResult() { document.getElementById('result-overlay').classList.remove('open'); }
+
+// =============================================================
+//  COUNTDOWN
+// =============================================================
+
+function startCountdown() {
+  function tick() {
+    const now  = new Date();
+    const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+    const diff = next - now;
+    const h = String(Math.floor(diff / 3600000)).padStart(2,'0');
+    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2,'0');
+    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2,'0');
+    const fmt = h + ':' + m + ':' + s;
+    // Result sheet (only when open)
+    const el = document.getElementById('countdown');
+    if (el) el.textContent = fmt;
+    // Header — always visible
+    const hcd = document.getElementById('hcd-time');
+    if (hcd) {
+      hcd.textContent = fmt;
+      hcd.className = 'hcd-time' + (diff < 3600000 ? ' urgent' : '');
+    }
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+// =============================================================
+//  STATS SCREEN
+// =============================================================
+
+function openStats()  { buildStatsSheet(); document.getElementById('stats-overlay').classList.add('open'); }
+function closeStats() { document.getElementById('stats-overlay').classList.remove('open'); }
+
+function buildStatsSheet() {
+  const s      = cStats();
+  const cs     = cState();
+  const winPct = s.played > 0 ? Math.round(s.won / s.played * 100) : 0;
+  const maxDist = Math.max(1, ...Object.values(s.guessDistribution).map(Number));
+  const accentCol = isWC() ? 'var(--wc-gold)' : 'var(--green)';
+
+  const avgG = (() => {
+    const dist = s.guessDistribution;
+    let total = 0, count = 0;
+    for (let i = 1; i <= 8; i++) { total += i * (dist[i]||0); count += (dist[i]||0); }
+    return count > 0 ? (total/count).toFixed(1) : '—';
+  })();
+
+  const histHtml = (() => {
+    const days = [];
+    for (let i = 13; i >= 0; i--) {
+      const pNum = PUZZLE_NUM - i;
+      if (pNum < 1) { days.push('<div class="streak-day empty"></div>'); continue; }
+      if (i === 0) {
+        const e = s.history && s.history.find(h => h.puzzle === pNum);
+        if (e) {
+          const ht = Math.max(8, Math.round((e.won ? (9 - e.guesses) / 8 : 0.1) * 48));
+          days.push('<div class="streak-day ' + (e.won ? 'played-won' : 'played-lost') + '" style="height:' + ht + 'px" title="Today"></div>');
+        } else {
+          days.push('<div class="streak-day today" style="height:10px" title="Today - not played yet"></div>');
+        }
+        continue;
+      }
+      const e = s.history && s.history.find(h => h.puzzle === pNum);
+      if (!e) { days.push('<div class="streak-day empty"></div>'); continue; }
+      const ht = Math.max(8, Math.round((e.won ? (9 - e.guesses) / 8 : 0.1) * 48));
+      days.push('<div class="streak-day ' + (e.won ? 'played-won' : 'played-lost') + '" style="height:' + ht + 'px"></div>');
+    }
+    return days.join('');
+  })();
+
+  const distHtml = [1,2,3,4,5,6,7,8].map(n => {
+    const count = s.guessDistribution[n] || 0;
+    const pct   = Math.max(4, Math.round(count / maxDist * 100));
+    const isWin = cs.won && cs.guesses.length === n;
+    return '<div class="dist-row">'
+      + '<div class="dist-num">' + n + '</div>'
+      + '<div class="dist-bar-wrap">'
+      + '<div class="dist-bar ' + (isWin ? 'highlight' : 'normal') + '" style="width:' + pct + '%">' + (count > 0 ? count : '') + '</div>'
+      + '</div></div>';
+  }).join('');
+
+  const fireCol = s.streak >= 30 ? '#f97316' : s.streak >= 7 ? (isWC() ? 'var(--wc-gold)' : 'var(--amber)') : s.streak >= 3 ? (isWC() ? '#e6c200' : '#fbbf24') : 'var(--text2)';
+  const modeLabel = isWC() ? 'World Cup' : 'Daily';
+
+  const statsBottomBtn = cs.completed
+    ? '<button class="btn-primary" onclick="closeStats();document.getElementById(\'result-overlay\').classList.add(\'open\')">See result</button>'
+    : '<button class="btn-primary" onclick="closeStats()">Back to puzzle</button>';
+
+  document.getElementById('stats-sheet').innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">'
+  +   '<div style="font-size:18px;font-weight:800;letter-spacing:-0.3px">' + modeLabel + ' stats</div>'
+  +   '<button class="icon-btn" onclick="closeStats()">&#x2715;</button>'
+  + '</div>'
+  + '<div class="stats-grid">'
+  +   '<div class="stat-card"><div class="stat-val">' + s.played + '</div><div class="stat-lbl">Played</div></div>'
+  +   '<div class="stat-card"><div class="stat-val" style="color:' + accentCol + '">' + winPct + '%</div><div class="stat-lbl">Win rate</div></div>'
+  +   '<div class="stat-card"><div class="stat-val" style="color:' + fireCol + '">' + s.streak + (s.streak > 0 ? ' \uD83D\uDD25' : '') + '</div><div class="stat-lbl">Streak</div></div>'
+  +   '<div class="stat-card"><div class="stat-val">' + s.longestStreak + '</div><div class="stat-lbl">Best</div></div>'
+  + '</div>'
+  + '<div class="streak-section">'
+  +   '<div class="streak-section-label">Last 14 days</div>'
+  +   '<div class="streak-bar">' + histHtml + '</div>'
+  +   '<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text3)">'
+  +     '<span>14 days ago</span>'
+  +     '<div style="display:flex;gap:10px">'
+  +       '<span><span style="display:inline-block;width:8px;height:8px;background:' + (isWC() ? 'var(--wc-gold)' : 'var(--green)') + ';border-radius:2px;vertical-align:middle;margin-right:3px"></span>Won</span>'
+  +       '<span><span style="display:inline-block;width:8px;height:8px;background:#2d3748;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Lost</span>'
+  +     '</div>'
+  +     '<span>Today</span>'
+  +   '</div>'
+  + '</div>'
+  + '<div class="dist-section">'
+  +   '<div class="streak-section-label">Guess distribution' + (s.won > 0 ? ' (avg ' + avgG + ')' : '') + '</div>'
+  +   (s.won > 0 ? distHtml : '<p style="font-size:13px;color:var(--text3);padding:8px 0">No wins yet — get one!</p>')
+  + '</div>'
+  + statsBottomBtn;
+}
+
+// =============================================================
+//  HOW TO PLAY
+// =============================================================
+
+function openHow()    { document.getElementById('how-overlay').classList.add('open'); }
+function closeHow()   { document.getElementById('how-overlay').classList.remove('open'); }
+function openAbout()  { document.getElementById('about-overlay').classList.add('open'); }
+function closeAbout() { document.getElementById('about-overlay').classList.remove('open'); }
+
+// =============================================================
+//  DIFFICULTY
+// =============================================================
+
+
+
+// =============================================================
+//  OVERLAYS
+// =============================================================
+
+function handleOverlayClick(e, id) {
+  if (e.target === document.getElementById(id)) document.getElementById(id).classList.remove('open');
+}
+
+// =============================================================
+//  TOAST
+// =============================================================
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// =============================================================
+//  MILESTONE
+// =============================================================
+
+function showMilestone(icon, title, sub) {
+  const el = document.getElementById('milestone-toast');
+  document.getElementById('milestone-icon').textContent  = icon;
+  document.getElementById('milestone-title').textContent = title;
+  document.getElementById('milestone-sub').textContent   = sub;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+// =============================================================
+//  CONFETTI
+// =============================================================
+
+function launchConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const COLORS  = isWC()
+    ? ['#f5c518','#e6a800','#ffffff','#f5c518','#ffd700','#e6c200']
+    : ['#22c55e','#f59e0b','#60a5fa','#f472b6','#a78bfa','#fb923c'];
+  const pieces  = Array.from({ length: 90 }, () => ({
+    x: Math.random() * canvas.width,
+    y: -10 - Math.random() * 80,
+    r: Math.random() * 5 + 3,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    vx: (Math.random() - 0.5) * 5,
+    vy: Math.random() * 3 + 2,
+    rot: Math.random() * 360,
+    rSpeed: (Math.random() - 0.5) * 7,
+    shape: Math.random() > 0.4 ? 'rect' : 'circle',
+  }));
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.rot += p.rSpeed;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(0, 1 - frame / 130);
+      if (p.shape === 'rect') ctx.fillRect(-p.r, -p.r/2, p.r*2, p.r);
+      else { ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI*2); ctx.fill(); }
+      ctx.restore();
+    });
+    frame++;
+    if (frame < 140) requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  requestAnimationFrame(draw);
+}
+
+// =============================================================
+//  INIT
+// =============================================================
+
+applyModeTheme();
+render();
+startCountdown();
+
+if (cState().completed) setTimeout(showResult, 800);
+
+if (stdStats.played === 0 && stdState.guesses.length === 0 && wcState.guesses.length === 0) {
+  setTimeout(openHow, 600);
+}
+
+</script>
+</body>
+</html>
